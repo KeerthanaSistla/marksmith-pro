@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Plus, ChevronDown, Pencil, Trash2, BookOpen } from "lucide-react";
+import { Plus, ChevronDown, Pencil, Trash2, BookOpen, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const initialSemesters = [
@@ -39,6 +39,8 @@ const SubjectsTab = ({ departmentId }) => {
   const [newSubjectName, setNewSubjectName] = useState("");
   const [newSubjectAbbr, setNewSubjectAbbr] = useState("");
   const [openSemesters, setOpenSemesters] = useState({});
+  const fileInputRef = useRef(null);
+  const uploadSemesterRef = useRef(null);
   const { toast } = useToast();
 
   const toggleSemester = (semId) => {
@@ -185,8 +187,57 @@ const SubjectsTab = ({ departmentId }) => {
     setSelectedSemester(null);
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !uploadSemesterRef.current) return;
+    const semId = uploadSemesterRef.current;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result;
+        const lines = text.split("\n").filter((l) => l.trim());
+        const headers = lines[0].toLowerCase();
+        if (!headers.includes("code") || !headers.includes("name")) {
+          toast({ title: "Invalid File", description: "CSV must have columns: Code, Name (and optionally Abbreviation)", variant: "destructive" });
+          return;
+        }
+        const newSubjects = [];
+        for (let i = 1; i < lines.length; i++) {
+          const vals = lines[i].split(",").map((v) => v.trim());
+          if (vals.length >= 2 && vals[0] && vals[1]) {
+            newSubjects.push({
+              id: Date.now() + i,
+              code: vals[0],
+              name: vals[1],
+              abbreviation: vals[2]?.trim() || vals[0],
+            });
+          }
+        }
+        if (newSubjects.length > 0) {
+          setSemesters(semesters.map((sem) =>
+            sem.id === semId ? { ...sem, subjects: [...sem.subjects, ...newSubjects] } : sem
+          ));
+          toast({ title: "Success", description: `${newSubjects.length} subjects imported` });
+        }
+      } catch {
+        toast({ title: "Error", description: "Failed to parse file", variant: "destructive" });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+    uploadSemesterRef.current = null;
+  };
+
+  const triggerBulkUpload = (semId) => {
+    uploadSemesterRef.current = semId;
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="space-y-6">
+      {/* Hidden file input */}
+      <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+
       {/* Add Semester Button */}
       <Button onClick={() => setShowAddSemesterDialog(true)} className="gap-2 bg-gradient-primary hover:opacity-90">
         <Plus className="w-4 h-4" />
@@ -258,14 +309,24 @@ const SubjectsTab = ({ departmentId }) => {
                       </p>
                     )}
 
-                    <Button
-                      variant="outline"
-                      onClick={() => openAddSubjectDialog(sem)}
-                      className="w-full gap-2 mt-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Subject
-                    </Button>
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => openAddSubjectDialog(sem)}
+                        className="flex-1 gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Subject
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => triggerBulkUpload(sem.id)}
+                        className="gap-2"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Bulk Upload (CSV)
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </CollapsibleContent>
