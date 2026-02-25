@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Building2 } from "lucide-react";
+import { ArrowLeft, Building2, Settings } from "lucide-react";
 import FacultyTab from "@/components/department/FacultyTab";
 import SubjectsTab from "@/components/department/SubjectsTab";
 import StudentsTab from "@/components/department/StudentsTab";
@@ -52,6 +52,10 @@ const DepartmentPage = () => {
                 <p className="text-sm text-muted-foreground">{department.abbreviation}</p>
               </div>
             </div>
+            <Button variant="outline" onClick={() => navigate(`/admin/department/${id}/settings`)} className="gap-2">
+              <Settings className="w-4 h-4" />
+              Settings
+            </Button>
           </div>
         </div>
       </header>
