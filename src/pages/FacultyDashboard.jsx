@@ -68,6 +68,8 @@ const FacultyDashboard = () => {
   const [selectedTest, setSelectedTest] = useState("");
   const [bulkMarks, setBulkMarks] = useState({});
   const [weekCount, setWeekCount] = useState(3);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [teachingAssignments, setTeachingAssignments] = useState([]);
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
