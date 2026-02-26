@@ -157,10 +157,16 @@ const FacultyDashboard = () => {
                 <p className="text-white/90">{mockFacultyData.name}</p>
               </div>
             </div>
-            <Button variant="outline" className="text-white border-white hover:bg-white/20" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="text-white border-white hover:bg-white/20" onClick={() => setShowAddDialog(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Subject
+              </Button>
+              <Button variant="outline" className="text-white border-white hover:bg-white/20" onClick={handleLogout}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
