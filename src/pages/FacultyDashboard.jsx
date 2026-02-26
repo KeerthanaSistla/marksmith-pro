@@ -162,9 +162,9 @@ const FacultyDashboard = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Subject
               </Button>
-              <Button variant="outline" className="text-white border-white hover:bg-white/20" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
+              <Button variant="outline" className="text-white border-white hover:bg-white/20" onClick={() => navigate("/faculty/settings")}>
+                <Settings className="w-4 h-4 mr-2" />
+                Settings
               </Button>
             </div>
           </div>
