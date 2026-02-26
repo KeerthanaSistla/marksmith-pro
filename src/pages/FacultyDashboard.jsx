@@ -350,7 +350,58 @@ const FacultyDashboard = () => {
             </CardContent>
           </Card>
         )}
+        {/* Teaching Assignments from Dialog */}
+        {teachingAssignments.length > 0 && (
+          <Card className="shadow-lg mb-8">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">My Teaching Assignments</CardTitle>
+              <CardDescription>Subjects added via the assignment dialog</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {teachingAssignments.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary/80 transition-colors"
+                    onClick={() =>
+                      setSelectedSubject({
+                        id: a.id,
+                        courseCode: a.subject.code,
+                        name: a.subject.name,
+                        type: a.subject.type,
+                        credits: a.subject.credits,
+                        class: a.teachingType === "section" ? a.section?.name : "Elective",
+                        students: a.students?.length || 0,
+                      })
+                    }
+                  >
+                    <div>
+                      <p className="font-semibold">{a.subject.code} – {a.subject.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {a.semester} • {a.academicYear} • {a.students?.length || 0} students
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge variant={a.subject.type === "theory" ? "default" : "secondary"}>
+                        {a.subject.type}
+                      </Badge>
+                      <Badge variant="outline">
+                        {a.teachingType === "section" ? a.section?.name : "Elective"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
+
+      <AddTeachingAssignment
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        onAdd={(assignment) => setTeachingAssignments((prev) => [...prev, assignment])}
+      />
     </div>
   );
 };
