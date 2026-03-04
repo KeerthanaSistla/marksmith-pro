@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import StudentDashboard from "./pages/StudentDashboard";
+import StudentSettings from "./pages/StudentSettings";
 import FacultyDashboard from "./pages/FacultyDashboard";
 import FacultySettings from "./pages/FacultySettings";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -14,6 +15,16 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/student" element={<StudentDashboard />} />
+          <Route path="/student/settings" element={<StudentSettings />} />
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
