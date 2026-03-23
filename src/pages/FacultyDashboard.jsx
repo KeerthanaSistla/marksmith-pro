@@ -173,6 +173,19 @@ const FacultyDashboard = () => {
       </header>
 
       <main className="container mx-auto px-6 py-10">
+        <Tabs defaultValue="subjects" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 h-12 mb-8">
+            <TabsTrigger value="subjects" className="text-base">
+              <BookOpen className="w-4 h-4 mr-2" />
+              Subjects & Marks
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-base">
+              <Activity className="w-4 h-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="subjects">
         {/* Subjects Overview */}
         <Card className="shadow-lg mb-8">
           <CardHeader className="pb-6">
