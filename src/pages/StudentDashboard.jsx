@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   GraduationCap,
   BookOpen,
@@ -24,7 +25,9 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
+  Activity,
 } from "lucide-react";
+import StudentAnalytics from "@/components/student/StudentAnalytics";
 
 const gradePoints = { S: 10, A: 9, B: 8, C: 7, D: 6, F: 0 };
 const gradeOptions = ["S", "A", "B", "C", "D", "F"];
