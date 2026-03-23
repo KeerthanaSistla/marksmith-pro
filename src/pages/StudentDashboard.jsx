@@ -579,6 +579,17 @@ const StudentDashboard = () => {
             </div>
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <StudentAnalytics
+              semesterData={mockSemesterData}
+              grades={grades}
+              calculateTheoryCIE={calculateTheoryCIE}
+              calculateLabCIE={calculateLabCIE}
+            />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

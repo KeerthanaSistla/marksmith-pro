@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Users, BookOpen, Upload, Eye, Plus } from "lucide-react";
+import { Settings, Users, BookOpen, Upload, Eye, Plus, Activity } from "lucide-react";
+import FacultyAnalytics from "@/components/faculty/FacultyAnalytics";
 import AddTeachingAssignment from "@/components/faculty/AddTeachingAssignment";
 import { useToast } from "@/hooks/use-toast";
 import {
