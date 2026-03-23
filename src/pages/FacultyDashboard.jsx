@@ -409,6 +409,12 @@ const FacultyDashboard = () => {
             </CardContent>
           </Card>
         )}
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <FacultyAnalytics subjects={mockFacultyData.subjects} />
+          </TabsContent>
+        </Tabs>
       </main>
 
       <AddTeachingAssignment
