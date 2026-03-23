@@ -264,6 +264,19 @@ const StudentDashboard = () => {
       </header>
 
       <main className="container mx-auto px-6 py-8 space-y-8">
+        <Tabs defaultValue="academics" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 h-12 mb-6">
+            <TabsTrigger value="academics" className="text-base">
+              <BookOpen className="w-4 h-4 mr-2" />
+              Academics
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-base">
+              <Activity className="w-4 h-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="academics" className="space-y-8">
         {/* Semester Selector + GPA Summary */}
         <div className="flex flex-col md:flex-row gap-6">
           {/* Semester Selector */}
