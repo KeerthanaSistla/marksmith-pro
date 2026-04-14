@@ -26,8 +26,10 @@ import {
   ChevronDown,
   ChevronUp,
   Activity,
+  Brain,
 } from "lucide-react";
 import StudentAnalytics from "@/components/student/StudentAnalytics";
+import StudentRiskAssessment from "@/components/student/RiskAssessment";
 
 const gradePoints = { S: 10, A: 9, B: 8, C: 7, D: 6, F: 0 };
 const gradeOptions = ["S", "A", "B", "C", "D", "F"];
@@ -265,7 +267,7 @@ const StudentDashboard = () => {
 
       <main className="container mx-auto px-6 py-8 space-y-8">
         <Tabs defaultValue="academics" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-12 mb-6">
+          <TabsList className="grid w-full grid-cols-3 h-12 mb-6">
             <TabsTrigger value="academics" className="text-base">
               <BookOpen className="w-4 h-4 mr-2" />
               Academics
@@ -273,6 +275,10 @@ const StudentDashboard = () => {
             <TabsTrigger value="analytics" className="text-base">
               <Activity className="w-4 h-4 mr-2" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="risk" className="text-base">
+              <Brain className="w-4 h-4 mr-2" />
+              Risk & Predictions
             </TabsTrigger>
           </TabsList>
 
@@ -587,6 +593,13 @@ const StudentDashboard = () => {
               grades={grades}
               calculateTheoryCIE={calculateTheoryCIE}
               calculateLabCIE={calculateLabCIE}
+            />
+          </TabsContent>
+
+          <TabsContent value="risk">
+            <StudentRiskAssessment
+              semesterData={mockSemesterData}
+              grades={grades}
             />
           </TabsContent>
         </Tabs>
