@@ -239,6 +239,17 @@ const StudentsTab = ({ departmentId }) => {
   // Get current batch sections
   const currentSections = selectedBatch?.sections || [];
 
+  // If viewing marks for a section, show the marks view
+  if (viewMarksSection) {
+    return (
+      <SectionMarksView
+        section={viewMarksSection}
+        batchName={selectedBatch?.name || ""}
+        onBack={() => setViewMarksSection(null)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} className="hidden" />
@@ -307,8 +318,20 @@ const StudentsTab = ({ departmentId }) => {
                     <span className="text-primary font-medium">Year {section.year}</span>
                     <span className="text-primary font-medium">Semester {section.semester}</span>
                   </div>
-                  <div className="mt-3 text-sm text-muted-foreground">Students</div>
-                  <div className="text-lg font-semibold text-foreground">{section.students?.length || 0}</div>
+                  <div className="flex items-center justify-between mt-3">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Students</div>
+                      <div className="text-lg font-semibold text-foreground">{section.students?.length || 0}</div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-primary border-primary/30 hover:bg-primary/5"
+                      onClick={(e) => { e.stopPropagation(); setViewMarksSection(section); }}
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" /> View Marks
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
