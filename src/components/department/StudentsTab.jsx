@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Upload, Pencil, Trash2, Users, Search } from "lucide-react";
+import { Plus, Upload, Pencil, Trash2, Users, Search, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import SectionMarksView from "./SectionMarksView";
 
 const initialBatches = [
   {
