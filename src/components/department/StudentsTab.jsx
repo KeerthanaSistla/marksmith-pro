@@ -318,8 +318,20 @@ const StudentsTab = ({ departmentId }) => {
                     <span className="text-primary font-medium">Year {section.year}</span>
                     <span className="text-primary font-medium">Semester {section.semester}</span>
                   </div>
-                  <div className="mt-3 text-sm text-muted-foreground">Students</div>
-                  <div className="text-lg font-semibold text-foreground">{section.students?.length || 0}</div>
+                  <div className="flex items-center justify-between mt-3">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Students</div>
+                      <div className="text-lg font-semibold text-foreground">{section.students?.length || 0}</div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-primary border-primary/30 hover:bg-primary/5"
+                      onClick={(e) => { e.stopPropagation(); setViewMarksSection(section); }}
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" /> View Marks
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
