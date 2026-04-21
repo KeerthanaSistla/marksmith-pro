@@ -50,6 +50,7 @@ const StudentsTab = ({ departmentId }) => {
   const [batches, setBatches] = useState(initialBatches);
   const [selectedBatchId, setSelectedBatchId] = useState(batches[0]?.id?.toString() || "");
   const [selectedSection, setSelectedSection] = useState(null);
+  const [viewMarksSection, setViewMarksSection] = useState(null);
 
   const [showAddBatchDialog, setShowAddBatchDialog] = useState(false);
   const [showAddSectionDialog, setShowAddSectionDialog] = useState(false);
