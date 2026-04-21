@@ -239,6 +239,17 @@ const StudentsTab = ({ departmentId }) => {
   // Get current batch sections
   const currentSections = selectedBatch?.sections || [];
 
+  // If viewing marks for a section, show the marks view
+  if (viewMarksSection) {
+    return (
+      <SectionMarksView
+        section={viewMarksSection}
+        batchName={selectedBatch?.name || ""}
+        onBack={() => setViewMarksSection(null)}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} className="hidden" />
