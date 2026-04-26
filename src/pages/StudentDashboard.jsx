@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import StudentAnalytics from "@/components/student/StudentAnalytics";
 import StudentRiskAssessment from "@/components/student/RiskAssessment";
+import { buildStudentSemesterData, getDefaultStudentId, getStudent, getSection, getBatch } from "@/lib/dataStore";
 
 const gradePoints = { S: 10, A: 9, B: 8, C: 7, D: 6, F: 0 };
 const gradeOptions = ["S", "A", "B", "C", "D", "F"];
@@ -42,118 +43,19 @@ const gradeColors = {
   F: "bg-destructive text-destructive-foreground",
 };
 
-// Mock data for 8 semesters
-const mockSemesterData = {
-  1: {
-    subjects: [
-      {
-        courseCode: "22MAT11",
-        name: "Engineering Mathematics I",
-        type: "theory",
-        credits: 4,
-        marks: { slipTests: [4, 5, 3], assignments: [8, 9], classTests: [16, 18], attendance: 4 },
-        grade: "A",
-      },
-      {
-        courseCode: "22PHY12",
-        name: "Engineering Physics",
-        type: "theory",
-        credits: 3,
-        marks: { slipTests: [3, 4, 5], assignments: [7, 8], classTests: [15, 17], attendance: 5 },
-        grade: "B",
-      },
-      {
-        courseCode: "22CHE13",
-        name: "Engineering Chemistry",
-        type: "theory",
-        credits: 3,
-        marks: { slipTests: [5, 4, 4], assignments: [9, 10], classTests: [18, 19], attendance: 5 },
-        grade: "S",
-      },
-      {
-        courseCode: "22PHY14",
-        name: "Physics Lab",
-        type: "lab",
-        credits: 1,
-        marks: { weeklyCIE: [28, 30, 25], internalTests: [18, 20] },
-        grade: "A",
-      },
-    ],
-  },
-  2: {
-    subjects: [
-      {
-        courseCode: "22MAT21",
-        name: "Engineering Mathematics II",
-        type: "theory",
-        credits: 4,
-        marks: { slipTests: [4, 3, 5], assignments: [8, 7], classTests: [14, 16], attendance: 4 },
-        grade: "B",
-      },
-      {
-        courseCode: "22CSC22",
-        name: "Data Structures",
-        type: "theory",
-        credits: 3,
-        marks: { slipTests: [5, 5, 4], assignments: [10, 9], classTests: [19, 18], attendance: 5 },
-        grade: "S",
-      },
-      {
-        courseCode: "22CSC23",
-        name: "DS Lab",
-        type: "lab",
-        credits: 1,
-        marks: { weeklyCIE: [30, 28, 29], internalTests: [19, 20] },
-        grade: "S",
-      },
-    ],
-  },
-  3: {
-    subjects: [
-      {
-        courseCode: "22CSC31",
-        name: "Software Engineering",
-        type: "theory",
-        credits: 3,
-        marks: { slipTests: [4, 5, 3], assignments: [8, 10], classTests: [15, 18], attendance: 5 },
-        grade: null,
-      },
-      {
-        courseCode: "22ITC32",
-        name: "Computer Networks",
-        type: "theory",
-        credits: 3,
-        marks: { slipTests: [3, 4, 4], assignments: [7, 9], classTests: [16, 15], attendance: 4 },
-        grade: null,
-      },
-      {
-        courseCode: "22CSC33",
-        name: "Operating Systems",
-        type: "theory",
-        credits: 4,
-        marks: { slipTests: [5, 4, 5], assignments: [9, 8], classTests: [17, 19], attendance: 5 },
-        grade: null,
-      },
-      {
-        courseCode: "22CSC34",
-        name: "CASE Tools Lab",
-        type: "lab",
-        credits: 1,
-        marks: { weeklyCIE: [28, 30, 25], internalTests: [18, 20] },
-        grade: null,
-      },
-    ],
-  },
-  4: { subjects: [] },
-  5: { subjects: [] },
-  6: { subjects: [] },
-  7: { subjects: [] },
-  8: { subjects: [] },
-};
+// Logged-in student (mock = first student of IT1 / batch 2023). Pulls live
+// data from the unified store, so faculty mark uploads are reflected here.
+const studentId = getDefaultStudentId();
+const studentRecord = studentId ? getStudent(studentId) : null;
+const studentSection = studentRecord ? getSection(studentRecord.sectionId) : null;
+const studentBatch = studentRecord ? getBatch(studentRecord.batchId) : null;
+const mockSemesterData = studentId
+  ? buildStudentSemesterData(studentId)
+  : { 1: { subjects: [] }, 2: { subjects: [] }, 3: { subjects: [] }, 4: { subjects: [] }, 5: { subjects: [] }, 6: { subjects: [] }, 7: { subjects: [] }, 8: { subjects: [] } };
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const [currentSemester, setCurrentSemester] = useState("3");
+  const [currentSemester, setCurrentSemester] = useState(String(studentSection?.currentSemester || 3));
   const [expandedSubject, setExpandedSubject] = useState(null);
   const [grades, setGrades] = useState(() => {
     // Initialize from mock data
@@ -250,7 +152,7 @@ const StudentDashboard = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Student Portal</h1>
-                <p className="text-primary-foreground/90 text-sm">Alice Johnson • CSE-3A-001</p>
+                <p className="text-primary-foreground/90 text-sm">{studentRecord?.name || "Student"} • {studentRecord?.rollNumber || ""} • {studentSection?.name} ({studentBatch?.name})</p>
               </div>
             </div>
             <Button

@@ -1,77 +1,59 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Users, BookOpen, Upload, Eye, Plus, Activity, Brain } from "lucide-react";
+import { Settings, Users, BookOpen, Upload, Eye, Activity, Brain } from "lucide-react";
 import FacultyAnalytics from "@/components/faculty/FacultyAnalytics";
 import RiskAssessment from "@/components/faculty/RiskAssessment";
-import AddTeachingAssignment from "@/components/faculty/AddTeachingAssignment";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Mock data for faculty subjects
-const mockFacultyData = {
-  name: "Dr. Robert Smith",
-  subjects: [
-    {
-      id: "sub1",
-      courseCode: "22CSC21",
-      name: "Software Engineering",
-      type: "theory",
-      credits: 3,
-      class: "CSE-3A",
-      students: 60,
-    },
-    {
-      id: "sub2",
-      courseCode: "22CSC23",
-      name: "CASE Tools Lab",
-      type: "lab",
-      credits: 1,
-      class: "CSE-3A",
-      students: 60,
-    },
-    {
-      id: "sub3",
-      courseCode: "22ITC08",
-      name: "Computer Networks",
-      type: "theory",
-      credits: 3,
-      class: "CSE-3B",
-      students: 58,
-    },
-  ],
-};
-
-// Mock student data
-const mockStudents = [
-  { id: "s1", name: "Alice Johnson", rollNo: "CSE-3A-001", class: "CSE-3A" },
-  { id: "s2", name: "Bob Williams", rollNo: "CSE-3A-002", class: "CSE-3A" },
-  { id: "s3", name: "Carol Davis", rollNo: "CSE-3A-003", class: "CSE-3A" },
-  { id: "s4", name: "David Miller", rollNo: "CSE-3A-004", class: "CSE-3A" },
-  { id: "s5", name: "Emma Wilson", rollNo: "CSE-3A-005", class: "CSE-3A" },
-];
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  getStore,
+  getAssignmentsForFaculty,
+  updateAssessment,
+  computeTheoryCIE,
+  computeLabCIE,
+  CIE_MAX_THEORY,
+  CIE_MAX_LAB,
+  DEFAULT_FACULTY_ID,
+} from "@/lib/dataStore";
 
 const FacultyDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [selectedSubject, setSelectedSubject] = useState(null);
+
+  // Logged-in faculty (mock)
+  const facultyId = DEFAULT_FACULTY_ID;
+  const store = getStore();
+  const me = store.faculty.find((f) => f.id === facultyId);
+
+  // All teaching assignments for this faculty, enriched with subject + section
+  const myAssignments = useMemo(() => {
+    return getAssignmentsForFaculty(facultyId).map((a) => {
+      const sub = store.subjects.find((s) => s.code === a.subjectCode);
+      const sec = store.sections.find((s) => s.id === a.sectionId);
+      const batch = store.batches.find((b) => b.id === a.batchId);
+      return {
+        ...a,
+        subject: sub,
+        section: sec,
+        batch,
+      };
+    });
+  }, [facultyId, store]);
+
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState(myAssignments[0]?.id || "");
+  const selected = myAssignments.find((a) => a.id === selectedAssignmentId);
+
   const [selectedTest, setSelectedTest] = useState("");
   const [bulkMarks, setBulkMarks] = useState({});
-  const [weekCount, setWeekCount] = useState(3);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [teachingAssignments, setTeachingAssignments] = useState([]);
+  const [, forceTick] = useState(0);
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
@@ -79,10 +61,11 @@ const FacultyDashboard = () => {
     navigate("/");
   };
 
+  const isTheory = selected?.subject?.type === "T";
+
   const getTestOptions = () => {
-    if (!selectedSubject) return [];
-    
-    if (selectedSubject.type === "theory") {
+    if (!selected) return [];
+    if (isTheory) {
       return [
         { value: "sliptest1", label: "Slip Test 1 (Max 5)", max: 5 },
         { value: "sliptest2", label: "Slip Test 2 (Max 5)", max: 5 },
@@ -93,60 +76,96 @@ const FacultyDashboard = () => {
         { value: "classtest2", label: "Class Test 2 (Max 20)", max: 20 },
         { value: "attendance", label: "Attendance (Max 5)", max: 5 },
       ];
-    } else {
-      const weekOptions = [];
-      for (let i = 1; i <= weekCount; i++) {
-        weekOptions.push({ value: `weeklycie${i}`, label: `Weekly CIE ${i} (Max 30)`, max: 30 });
-      }
-      weekOptions.push(
-        { value: "internaltest1", label: "Internal Test 1 (Max 20)", max: 20 },
-        { value: "internaltest2", label: "Internal Test 2 (Max 20)", max: 20 }
-      );
-      return weekOptions;
     }
+    return [
+      { value: "weeklycie1", label: "Weekly CIE 1 (Max 30)", max: 30 },
+      { value: "weeklycie2", label: "Weekly CIE 2 (Max 30)", max: 30 },
+      { value: "weeklycie3", label: "Weekly CIE 3 (Max 30)", max: 30 },
+      { value: "internaltest1", label: "Internal Test 1 (Max 20)", max: 20 },
+      { value: "internaltest2", label: "Internal Test 2 (Max 20)", max: 20 },
+    ];
   };
 
-  const handleAddWeek = () => {
-    setWeekCount(prev => prev + 1);
-    toast({
-      title: "Week Added",
-      description: `Week ${weekCount + 1} has been added to the assessment list`,
-    });
-  };
+  const classStudents = useMemo(() => {
+    if (!selected) return [];
+    return selected.studentIds
+      .map((sid) => store.students.find((st) => st.id === sid))
+      .filter(Boolean);
+  }, [selected, store]);
 
-  const handleBulkMarkChange = (studentId, value) => {
-    setBulkMarks(prev => ({ ...prev, [studentId]: value }));
+  const handleBulkMarkChange = (sid, val) => {
+    setBulkMarks((prev) => ({ ...prev, [sid]: val }));
   };
 
   const handleSubmitBulkMarks = () => {
-    if (!selectedTest) {
-      toast({
-        title: "Error",
-        description: "Please select a test",
-        variant: "destructive",
-      });
+    if (!selectedTest || !selected) {
+      toast({ title: "Error", description: "Please select an assessment", variant: "destructive" });
       return;
     }
-
-    const submittedCount = Object.keys(bulkMarks).filter(key => bulkMarks[key]).length;
-    
+    const filtered = Object.fromEntries(
+      Object.entries(bulkMarks).filter(([, v]) => v !== "" && v != null),
+    );
+    if (!Object.keys(filtered).length) {
+      toast({ title: "Nothing to submit", description: "Enter marks for at least one student", variant: "destructive" });
+      return;
+    }
+    updateAssessment(selected.id, selectedTest, filtered);
     toast({
-      title: "Marks Uploaded Successfully",
-      description: `${selectedTest.toUpperCase()} marks uploaded for ${submittedCount} students`,
+      title: "Marks Saved",
+      description: `${selectedTest.toUpperCase()} updated for ${Object.keys(filtered).length} students`,
     });
-
     setBulkMarks({});
-    setSelectedTest("");
+    forceTick((n) => n + 1);
   };
 
-  const getClassStudents = () => {
-    if (!selectedSubject) return [];
-    return mockStudents.filter(s => s.class === selectedSubject.class);
-  };
+  // ── Subject-wise view: show every student's CIE breakdown ──
+  const subjectWise = useMemo(() => {
+    if (!selected) return [];
+    return classStudents.map((st) => {
+      const m = store.marks[`${selected.id}|${st.id}`] || {};
+      if (isTheory) {
+        const c = computeTheoryCIE(m);
+        return {
+          ...st,
+          slipTest: c.slipTest,
+          assignment: c.assignment,
+          classTest: c.classTest,
+          attendance: c.attendance,
+          total: c.total,
+          max: CIE_MAX_THEORY,
+          slipTests: m.slipTests || [],
+          assignments: m.assignments || [],
+          classTests: m.classTests || [],
+        };
+      }
+      const c = computeLabCIE(m);
+      return {
+        ...st,
+        weeklyCIE: c.weeklyCIE,
+        internalTests: c.internalTests,
+        total: c.total,
+        max: CIE_MAX_LAB,
+        weeklies: m.weeklyCIE || [],
+        internals: m.internalTests || [],
+      };
+    });
+  }, [selected, classStudents, store, isTheory]);
+
+  // Adapter for analytics components that expect 'theory'/'lab' types
+  const analyticsSubjects = useMemo(() => {
+    return myAssignments.map((a) => ({
+      id: a.id,
+      courseCode: a.subject.code,
+      name: a.subject.name,
+      type: a.subject.type === "T" ? "theory" : "lab",
+      credits: a.subject.credits,
+      class: a.section?.name,
+      students: a.studentIds.length,
+    }));
+  }, [myAssignments]);
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-gradient-accent text-white shadow-lg">
         <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-between">
@@ -156,17 +175,16 @@ const FacultyDashboard = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold mb-1">Faculty Portal</h1>
-                <p className="text-white/90">{mockFacultyData.name}</p>
+                <p className="text-white/90">{me?.name} • {me?.designation}</p>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="text-white border-white hover:bg-white/20" onClick={() => setShowAddDialog(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Subject
-              </Button>
               <Button variant="outline" className="text-white border-white hover:bg-white/20" onClick={() => navigate("/faculty/settings")}>
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
+              </Button>
+              <Button variant="outline" className="text-white border-white hover:bg-white/20" onClick={handleLogout}>
+                Logout
               </Button>
             </div>
           </div>
@@ -177,247 +195,268 @@ const FacultyDashboard = () => {
         <Tabs defaultValue="subjects" className="w-full">
           <TabsList className="grid w-full grid-cols-3 h-12 mb-8">
             <TabsTrigger value="subjects" className="text-base">
-              <BookOpen className="w-4 h-4 mr-2" />
-              Subjects & Marks
+              <BookOpen className="w-4 h-4 mr-2" /> Subjects & Marks
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-base">
-              <Activity className="w-4 h-4 mr-2" />
-              Analytics
+              <Activity className="w-4 h-4 mr-2" /> Analytics
             </TabsTrigger>
             <TabsTrigger value="risk" className="text-base">
-              <Brain className="w-4 h-4 mr-2" />
-              Risk Assessment
+              <Brain className="w-4 h-4 mr-2" /> Risk Assessment
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="subjects">
-        {/* Subjects Overview */}
-        <Card className="shadow-lg mb-8">
-          <CardHeader className="pb-6">
-            <CardTitle className="flex items-center gap-3 text-2xl">
-              <BookOpen className="w-6 h-6" />
-              My Subjects
-            </CardTitle>
-            <CardDescription className="text-base">Select a subject to upload marks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-6">
-              {mockFacultyData.subjects.map((subject) => (
-                <Card
-                  key={subject.id}
-                  className={`cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 ${
-                    selectedSubject?.id === subject.id ? "border-2 border-primary shadow-md" : "border-2 border-transparent"
-                  }`}
-                  onClick={() => setSelectedSubject(subject)}
-                >
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <CardTitle className="text-xl mb-2">{subject.courseCode}</CardTitle>
-                        <CardDescription className="text-sm leading-relaxed">{subject.name}</CardDescription>
-                      </div>
-                      <Badge variant={subject.type === "theory" ? "default" : "secondary"} className="ml-2">
-                        {subject.type === "theory" ? "Theory" : "Lab"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Class:</span>
-                      <span className="font-medium">{subject.class}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Credits:</span>
-                      <span className="font-medium">{subject.credits}</span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Students:</span>
-                      <span className="font-semibold text-primary">{subject.students}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Marks Upload/View Section */}
-        {selectedSubject && (
-          <Card className="shadow-lg border-primary">
-            <CardHeader className="pb-6">
-              <CardTitle className="flex items-center gap-3 text-2xl">
-                <Upload className="w-6 h-6" />
-                Manage Marks - {selectedSubject.name}
-              </CardTitle>
-              <CardDescription className="text-base mt-2">
-                {selectedSubject.courseCode} | {selectedSubject.class} | {selectedSubject.type === "theory" ? "Theory Subject (CIE: 40)" : "Lab Subject (CIE: 50)"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="upload" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 h-12">
-                  <TabsTrigger value="upload" className="text-base">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Marks
-                  </TabsTrigger>
-                  <TabsTrigger value="view" className="text-base">
-                    <Eye className="w-4 h-4 mr-2" />
-                    View Student-Wise
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="upload" className="space-y-6 mt-8">
-                  {/* Lab Week Management */}
-                  {selectedSubject.type === "lab" && (
-                    <div className="bg-accent/10 p-5 rounded-lg border border-accent/20">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold text-base mb-1">Weekly CIE Management</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Currently tracking {weekCount} weeks of lab assessments
-                          </p>
-                        </div>
-                        <Button onClick={handleAddWeek} variant="outline" className="gap-2">
-                          <Upload className="w-4 h-4" />
-                          Add Week
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Test Selection */}
-                  <div className="space-y-3">
-                    <Label htmlFor="test" className="text-base font-semibold">Select Test/Assessment</Label>
-                    <Select value={selectedTest} onValueChange={setSelectedTest}>
-                      <SelectTrigger className="h-12 text-base">
-                        <SelectValue placeholder="Choose a test to upload marks" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getTestOptions().map(test => (
-                          <SelectItem key={test.value} value={test.value} className="text-base">
-                            {test.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Bulk Upload Table */}
-                  {selectedTest && (
-                    <div className="space-y-6">
-                      <div className="bg-primary/10 p-5 rounded-lg border border-primary/20">
-                        <h3 className="font-semibold text-lg mb-2">
-                          {getTestOptions().find(t => t.value === selectedTest)?.label}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          Enter marks for all students below. Maximum marks: {getTestOptions().find(t => t.value === selectedTest)?.max}
-                        </p>
-                      </div>
-
-                      <div className="border rounded-lg overflow-hidden shadow-sm">
-                        <div className="bg-muted px-6 py-4 grid grid-cols-3 gap-6 font-semibold">
-                          <div>Roll Number</div>
-                          <div>Student Name</div>
-                          <div>Marks</div>
-                        </div>
-                        <div className="divide-y">
-                          {getClassStudents().map((student) => (
-                            <div key={student.id} className="px-6 py-4 grid grid-cols-3 gap-6 items-center hover:bg-muted/50 transition-colors">
-                              <div className="font-medium">{student.rollNo}</div>
-                              <div>{student.name}</div>
-                              <div>
-                                <Input
-                                  type="number"
-                                  step="0.5"
-                                  min="0"
-                                  max={getTestOptions().find(t => t.value === selectedTest)?.max}
-                                  placeholder="0"
-                                  value={bulkMarks[student.id] || ""}
-                                  onChange={(e) => handleBulkMarkChange(student.id, e.target.value)}
-                                  className="max-w-[120px] h-11"
-                                />
-                              </div>
+            {/* Subject Cards */}
+            <Card className="shadow-lg mb-8">
+              <CardHeader className="pb-6">
+                <CardTitle className="flex items-center gap-3 text-2xl">
+                  <BookOpen className="w-6 h-6" /> My Subjects
+                </CardTitle>
+                <CardDescription className="text-base">
+                  {myAssignments.length} teaching assignments across batches & sections
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {myAssignments.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No teaching assignments allocated yet.
+                  </p>
+                ) : (
+                  <div className="grid md:grid-cols-3 gap-6">
+                    {myAssignments.map((a) => (
+                      <Card
+                        key={a.id}
+                        className={`cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 ${
+                          selectedAssignmentId === a.id ? "border-2 border-primary shadow-md" : "border-2 border-transparent"
+                        }`}
+                        onClick={() => { setSelectedAssignmentId(a.id); setSelectedTest(""); setBulkMarks({}); }}
+                      >
+                        <CardHeader className="pb-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <CardTitle className="text-xl mb-2">{a.subject.code}</CardTitle>
+                              <CardDescription className="text-sm leading-relaxed">{a.subject.name}</CardDescription>
                             </div>
-                          ))}
+                            <Badge variant={a.subject.type === "T" ? "default" : "secondary"} className="ml-2">
+                              {a.subject.type === "T" ? "Theory" : "Lab"}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Section:</span>
+                            <span className="font-medium">{a.section?.name} ({a.batch?.name})</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Semester:</span>
+                            <span className="font-medium">Sem {a.semester}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Credits:</span>
+                            <span className="font-medium">{a.subject.credits}</span>
+                          </div>
+                          <Separator />
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Students:</span>
+                            <span className="font-semibold text-primary">{a.studentIds.length}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Marks Section */}
+            {selected && (
+              <Card className="shadow-lg border-primary">
+                <CardHeader className="pb-6">
+                  <CardTitle className="flex items-center gap-3 text-2xl">
+                    <Upload className="w-6 h-6" />
+                    {selected.subject.code} — {selected.subject.name}
+                  </CardTitle>
+                  <CardDescription className="text-base mt-2">
+                    {selected.section?.name} • {selected.batch?.name} • Sem {selected.semester} •{" "}
+                    {isTheory ? `Theory (CIE ${CIE_MAX_THEORY})` : `Lab (CIE ${CIE_MAX_LAB})`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="upload" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 h-12">
+                      <TabsTrigger value="upload" className="text-base">
+                        <Upload className="w-4 h-4 mr-2" /> Upload Marks
+                      </TabsTrigger>
+                      <TabsTrigger value="view" className="text-base">
+                        <Eye className="w-4 h-4 mr-2" /> View Subject-Wise Marks
+                      </TabsTrigger>
+                    </TabsList>
+
+                    {/* Upload */}
+                    <TabsContent value="upload" className="space-y-6 mt-8">
+                      <div className="space-y-3">
+                        <Label className="text-base font-semibold">Select Assessment</Label>
+                        <Select value={selectedTest} onValueChange={setSelectedTest}>
+                          <SelectTrigger className="h-12 text-base">
+                            <SelectValue placeholder="Choose an assessment" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getTestOptions().map((t) => (
+                              <SelectItem key={t.value} value={t.value} className="text-base">
+                                {t.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {selectedTest && (
+                        <div className="space-y-6">
+                          <div className="bg-primary/10 p-5 rounded-lg border border-primary/20">
+                            <h3 className="font-semibold text-lg mb-1">
+                              {getTestOptions().find((t) => t.value === selectedTest)?.label}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              Existing values are pre-filled. Edit and save to update student CIE.
+                            </p>
+                          </div>
+
+                          <div className="border rounded-lg overflow-hidden shadow-sm">
+                            <div className="bg-muted px-6 py-3 grid grid-cols-12 gap-4 font-semibold text-sm">
+                              <div className="col-span-3">Roll Number</div>
+                              <div className="col-span-6">Student Name</div>
+                              <div className="col-span-3">Marks</div>
+                            </div>
+                            <div className="divide-y max-h-[480px] overflow-y-auto">
+                              {classStudents.map((st) => {
+                                const stored = (() => {
+                                  const m = store.marks[`${selected.id}|${st.id}`] || {};
+                                  if (selectedTest.startsWith("sliptest")) return m.slipTests?.[parseInt(selectedTest.replace("sliptest", ""), 10) - 1];
+                                  if (selectedTest.startsWith("assignment")) return m.assignments?.[parseInt(selectedTest.replace("assignment", ""), 10) - 1];
+                                  if (selectedTest.startsWith("classtest")) return m.classTests?.[parseInt(selectedTest.replace("classtest", ""), 10) - 1];
+                                  if (selectedTest === "attendance") return m.attendance;
+                                  if (selectedTest.startsWith("weeklycie")) return m.weeklyCIE?.[parseInt(selectedTest.replace("weeklycie", ""), 10) - 1];
+                                  if (selectedTest.startsWith("internaltest")) return m.internalTests?.[parseInt(selectedTest.replace("internaltest", ""), 10) - 1];
+                                  return "";
+                                })();
+                                const value = bulkMarks[st.id] !== undefined ? bulkMarks[st.id] : stored ?? "";
+                                return (
+                                  <div key={st.id} className="px-6 py-3 grid grid-cols-12 gap-4 items-center hover:bg-muted/50 transition-colors text-sm">
+                                    <div className="col-span-3 font-mono">{st.rollNumber}</div>
+                                    <div className="col-span-6">{st.name}</div>
+                                    <div className="col-span-3">
+                                      <Input
+                                        type="number"
+                                        step="0.5"
+                                        min="0"
+                                        max={getTestOptions().find((t) => t.value === selectedTest)?.max}
+                                        placeholder="0"
+                                        value={value}
+                                        onChange={(e) => handleBulkMarkChange(st.id, e.target.value)}
+                                        className="max-w-[120px] h-10"
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <Button
+                            onClick={handleSubmitBulkMarks}
+                            className="w-full bg-gradient-primary hover:opacity-90 h-12 text-base"
+                            size="lg"
+                          >
+                            <Upload className="w-5 h-5 mr-2" />
+                            Save Marks for All Students
+                          </Button>
                         </div>
-                      </div>
+                      )}
+                    </TabsContent>
 
-                      <div className="pt-2">
-                        <Button 
-                          onClick={handleSubmitBulkMarks} 
-                          className="w-full bg-gradient-primary hover:opacity-90 h-12 text-base" 
-                          size="lg"
-                        >
-                          <Upload className="w-5 h-5 mr-2" />
-                          Submit Marks for All Students
-                        </Button>
+                    {/* View Subject-Wise Marks */}
+                    <TabsContent value="view" className="space-y-4 mt-8">
+                      <div className="border rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted">
+                              <TableHead className="w-[40px]">#</TableHead>
+                              <TableHead>Roll Number</TableHead>
+                              <TableHead>Name</TableHead>
+                              {isTheory ? (
+                                <>
+                                  <TableHead className="text-center">Slip Tests<br /><span className="text-xs font-normal">(avg/5)</span></TableHead>
+                                  <TableHead className="text-center">Assignments<br /><span className="text-xs font-normal">(avg/10)</span></TableHead>
+                                  <TableHead className="text-center">Class Tests<br /><span className="text-xs font-normal">(avg/20)</span></TableHead>
+                                  <TableHead className="text-center">Attendance<br /><span className="text-xs font-normal">(/5)</span></TableHead>
+                                </>
+                              ) : (
+                                <>
+                                  <TableHead className="text-center">Weekly CIE<br /><span className="text-xs font-normal">(/90)</span></TableHead>
+                                  <TableHead className="text-center">Internal Tests<br /><span className="text-xs font-normal">(/40)</span></TableHead>
+                                </>
+                              )}
+                              <TableHead className="text-center bg-primary/10 font-bold">
+                                Final CIE<br /><span className="text-xs font-normal">/{isTheory ? CIE_MAX_THEORY : CIE_MAX_LAB}</span>
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {subjectWise.map((row, idx) => (
+                              <TableRow key={row.id} className={idx % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                                <TableCell className="text-center">{idx + 1}</TableCell>
+                                <TableCell className="font-mono text-xs">{row.rollNumber}</TableCell>
+                                <TableCell className="font-medium">{row.name}</TableCell>
+                                {isTheory ? (
+                                  <>
+                                    <TableCell className="text-center">
+                                      <div className="font-semibold">{row.slipTest}</div>
+                                      <div className="text-xs text-muted-foreground">{row.slipTests.join(", ")}</div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <div className="font-semibold">{row.assignment}</div>
+                                      <div className="text-xs text-muted-foreground">{row.assignments.join(", ")}</div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <div className="font-semibold">{row.classTest}</div>
+                                      <div className="text-xs text-muted-foreground">{row.classTests.join(", ")}</div>
+                                    </TableCell>
+                                    <TableCell className="text-center font-semibold">{row.attendance}</TableCell>
+                                  </>
+                                ) : (
+                                  <>
+                                    <TableCell className="text-center">
+                                      <div className="font-semibold">{row.weeklyCIE}</div>
+                                      <div className="text-xs text-muted-foreground">{row.weeklies.join(", ")}</div>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <div className="font-semibold">{row.internalTests}</div>
+                                      <div className="text-xs text-muted-foreground">{row.internals.join(", ")}</div>
+                                    </TableCell>
+                                  </>
+                                )}
+                                <TableCell className={`text-center bg-primary/5 font-bold text-base ${
+                                  row.total / row.max < 0.4 ? "text-destructive" : row.total / row.max >= 0.9 ? "text-emerald-600" : "text-primary"
+                                }`}>
+                                  {row.total}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="view" className="space-y-4 mt-8">
-                  <div className="bg-muted/50 p-8 rounded-lg text-center">
-                    <Eye className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground text-base">
-                      View detailed marks breakdown for individual students (coming soon)
-                    </p>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        )}
-        {/* Teaching Assignments from Dialog */}
-        {teachingAssignments.length > 0 && (
-          <Card className="shadow-lg mb-8">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl">My Teaching Assignments</CardTitle>
-              <CardDescription>Subjects added via the assignment dialog</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {teachingAssignments.map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg cursor-pointer hover:bg-secondary/80 transition-colors"
-                    onClick={() =>
-                      setSelectedSubject({
-                        id: a.id,
-                        courseCode: a.subject.code,
-                        name: a.subject.name,
-                        type: a.subject.type,
-                        credits: a.subject.credits,
-                        class: a.teachingType === "section" ? a.section?.name : "Elective",
-                        students: a.students?.length || 0,
-                      })
-                    }
-                  >
-                    <div>
-                      <p className="font-semibold">{a.subject.code} – {a.subject.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {a.semester} • {a.academicYear} • {a.students?.length || 0} students
+                      <p className="text-xs text-muted-foreground text-center">
+                        These CIE values are mirrored in the student's dashboard and the Department's section marks view.
                       </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Badge variant={a.subject.type === "theory" ? "default" : "secondary"}>
-                        {a.subject.type}
-                      </Badge>
-                      <Badge variant="outline">
-                        {a.teachingType === "section" ? a.section?.name : "Elective"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="analytics">
-            <FacultyAnalytics subjects={mockFacultyData.subjects} />
+            <FacultyAnalytics subjects={analyticsSubjects} />
           </TabsContent>
 
           <TabsContent value="risk">
@@ -425,12 +464,6 @@ const FacultyDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
-
-      <AddTeachingAssignment
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        onAdd={(assignment) => setTeachingAssignments((prev) => [...prev, assignment])}
-      />
     </div>
   );
 };
