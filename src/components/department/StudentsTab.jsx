@@ -9,45 +9,32 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Upload, Pencil, Trash2, Users, Search, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import SectionMarksView from "./SectionMarksView";
+import { getStore, saveStore } from "@/lib/dataStore";
 
-const initialBatches = [
-  {
-    id: 1,
-    name: "2023-2027",
-    startYear: 2023,
-    endYear: 2027,
-    sections: [
-      {
-        id: 1, name: "IT1", year: 3, semester: 6,
-        students: [
-          { id: 1, rollNumber: "160123737071", name: "AMETI AKSHITHA" },
-          { id: 2, rollNumber: "160123737072", name: "HAMSAGOUNI RITHIKA" },
-          { id: 3, rollNumber: "160123737073", name: "KANDIMALLA SONY" },
-          { id: 4, rollNumber: "160123737074", name: "LAKSHANA.S" },
-          { id: 5, rollNumber: "160123737075", name: "MEGHANA" },
-          { id: 6, rollNumber: "160123737076", name: "MEHERUNNISA" },
-          { id: 7, rollNumber: "160123737077", name: "NIMMALA MADHURI" },
-        ],
-      },
-      {
-        id: 2, name: "IT2", year: 3, semester: 6,
-        students: [
-          { id: 8, rollNumber: "160123737078", name: "PRIYA SHARMA" },
-          { id: 9, rollNumber: "160123737079", name: "RAHUL KUMAR" },
-        ],
-      },
-      {
-        id: 3, name: "IT3", year: 3, semester: 6,
-        students: [
-          { id: 10, rollNumber: "160123737080", name: "SNEHA REDDY" },
-        ],
-      },
-    ],
-  },
-];
+// Build the legacy `batches → sections → students` shape from the unified store
+function buildBatchesFromStore() {
+  const store = getStore();
+  return store.batches.map((b) => ({
+    id: b.id,
+    name: b.name,
+    startYear: b.startYear,
+    endYear: b.endYear,
+    sections: store.sections
+      .filter((s) => s.batchId === b.id)
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        year: Math.ceil(s.currentSemester / 2),
+        semester: s.currentSemester,
+        students: s.studentIds
+          .map((sid) => store.students.find((st) => st.id === sid))
+          .filter(Boolean),
+      })),
+  }));
+}
 
 const StudentsTab = ({ departmentId }) => {
-  const [batches, setBatches] = useState(initialBatches);
+  const [batches, setBatches] = useState(buildBatchesFromStore);
   const [selectedBatchId, setSelectedBatchId] = useState(batches[0]?.id?.toString() || "");
   const [selectedSection, setSelectedSection] = useState(null);
   const [viewMarksSection, setViewMarksSection] = useState(null);
