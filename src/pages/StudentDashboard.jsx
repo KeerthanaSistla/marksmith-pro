@@ -55,7 +55,7 @@ const mockSemesterData = studentId
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const [currentSemester, setCurrentSemester] = useState("3");
+  const [currentSemester, setCurrentSemester] = useState(String(studentSection?.currentSemester || 3));
   const [expandedSubject, setExpandedSubject] = useState(null);
   const [grades, setGrades] = useState(() => {
     // Initialize from mock data
@@ -152,7 +152,7 @@ const StudentDashboard = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Student Portal</h1>
-                <p className="text-primary-foreground/90 text-sm">Alice Johnson • CSE-3A-001</p>
+                <p className="text-primary-foreground/90 text-sm">{studentRecord?.name || "Student"} • {studentRecord?.rollNumber || ""} • {studentSection?.name} ({studentBatch?.name})</p>
               </div>
             </div>
             <Button
