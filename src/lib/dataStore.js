@@ -521,7 +521,7 @@ export function buildStudentSemesterData(studentId) {
 }
 
 // Default identity for demo logins
-export const DEFAULT_FACULTY_ID = "FAC001";
+export const DEFAULT_FACULTY_ID = "IT01";
 export function getDefaultStudentId() {
   // Pick first student of batch 2023, IT1
   const s = getStore().students.find((st) => st.sectionId === "B-2023-IT1");
