@@ -102,19 +102,23 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border shadow-sm">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-gradient-to-r from-primary via-primary/80 to-accent text-primary-foreground shadow-lg">
+        <div className="container mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-primary-foreground" />
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <Building2 className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Admin Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Department Management</p>
+                <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+                <p className="text-sm opacity-80">Department Management</p>
               </div>
             </div>
-            <Button variant="outline" onClick={handleLogout} className="gap-2">
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="gap-2 text-primary-foreground hover:bg-white/10 border border-white/20"
+            >
               <LogOut className="w-4 h-4" />
               Logout
             </Button>
