@@ -381,10 +381,12 @@ export const CIE_MAX_LAB = 50;
 export function computeTheoryCIE(m) {
   if (!m) return { slipTest: 0, assignment: 0, classTest: 0, attendance: 0, total: 0 };
   const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
-  const slipTest = avg(m.slipTests || []);
+  // Best 2 of 3 slip tests → average
+  const slips = (m.slipTests || []).slice().sort((a, b) => b - a).slice(0, 2);
+  const slipTest = avg(slips);
   const assignment = avg(m.assignments || []);
   const classTest = avg(m.classTests || []);
-  const attendance = m.attendance || 0;
+  const attendance = Math.min(5, m.attendance || 0);
   return {
     slipTest: Math.round(slipTest * 10) / 10,
     assignment: Math.round(assignment * 10) / 10,
