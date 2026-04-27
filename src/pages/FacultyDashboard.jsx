@@ -48,6 +48,27 @@ const FacultyDashboard = () => {
     });
   }, [facultyId, store]);
 
+  // Academic year filter
+  const academicYears = useMemo(() => {
+    const set = new Set(myAssignments.map((a) => a.academicYear).filter(Boolean));
+    return Array.from(set).sort();
+  }, [myAssignments]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState("all");
+
+  const displayedAssignments = useMemo(() => {
+    if (selectedAcademicYear === "all") return myAssignments;
+    return myAssignments.filter((a) => a.academicYear === selectedAcademicYear);
+  }, [myAssignments, selectedAcademicYear]);
+
+  const subjectsByYear = useMemo(() => {
+    const map = {};
+    for (const a of myAssignments) {
+      const y = a.academicYear || "—";
+      (map[y] = map[y] || []).push(a);
+    }
+    return map;
+  }, [myAssignments]);
+
   const [selectedAssignmentId, setSelectedAssignmentId] = useState(myAssignments[0]?.id || "");
   const selected = myAssignments.find((a) => a.id === selectedAssignmentId);
 
