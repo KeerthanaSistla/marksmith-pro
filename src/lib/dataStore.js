@@ -13,7 +13,7 @@
 // place are reflected everywhere. Marks are seeded randomly on first run.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "intelligrade.store.v3";
+const STORAGE_KEY = "intelligrade.store.v4";
 
 // ─── Subject catalogue (full IT curriculum, sem 1-8) ────────────────────────
 const SUBJECTS = [
@@ -220,16 +220,36 @@ function buildSeedStore() {
   }
 
   // ── Random faculty ↔ subject ↔ section assignments ──
-  // For each batch, for each semester from 1..currentSemester, every subject
-  // is assigned to a random faculty per section.
+  // For each (batch, section, semester) we pick a curated subset of the
+  // semester's catalogue: 4-6 theory subjects + 3-4 practical subjects.
+  // Selection is deterministic per (batch, section, semester).
+  const pickSubset = (pool, count, seedKey) => {
+    const r = mulberry32(hashStr(seedKey));
+    const arr = pool.slice();
+    // Fisher–Yates with deterministic PRNG
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(r() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr.slice(0, Math.min(count, arr.length));
+  };
+
   const assignments = [];
   for (const batch of batches) {
     const upToSem = batchCurrentSemester(batch.startYear);
     for (let sem = 1; sem <= upToSem; sem++) {
       const semSubs = SUBJECTS.filter((s) => s.semester === sem);
+      const theoryPool = semSubs.filter((s) => s.type === "T");
+      const labPool = semSubs.filter((s) => s.type === "P");
       const sectionsOfBatch = sections.filter((s) => s.batchId === batch.id);
-      for (const sub of semSubs) {
-        for (const sec of sectionsOfBatch) {
+      for (const sec of sectionsOfBatch) {
+        const rSel = mulberry32(hashStr(`SEL|${batch.id}|${sec.id}|${sem}`));
+        const theoryCount = 4 + Math.floor(rSel() * 3); // 4..6
+        const labCount = 3 + Math.floor(rSel() * 2);    // 3..4
+        const chosenTheory = pickSubset(theoryPool, theoryCount, `T|${batch.id}|${sec.id}|${sem}`);
+        const chosenLab = pickSubset(labPool, labCount, `P|${batch.id}|${sec.id}|${sem}`);
+        const chosen = [...chosenTheory, ...chosenLab];
+        for (const sub of chosen) {
           const seed = hashStr(`${batch.id}|${sec.id}|${sub.code}|${sem}`);
           const rand = mulberry32(seed);
           const fac = FACULTY[Math.floor(rand() * FACULTY.length)];

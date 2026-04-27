@@ -93,22 +93,23 @@ const DepartmentSettings = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-border shadow-sm">
-        <div className="container mx-auto px-4 py-4">
+      <header className="bg-gradient-to-r from-primary via-primary/80 to-accent text-primary-foreground shadow-lg">
+        <div className="container mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/department/${id}`)}>
+              <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/department/${id}`)} className="text-primary-foreground hover:bg-white/10">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="w-12 h-12 bg-gradient-primary rounded-full flex items-center justify-center">
-                <Settings className="w-6 h-6 text-primary-foreground" />
-              </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Department Settings</h1>
-                <p className="text-sm text-muted-foreground">{department.name}</p>
+                <h1 className="text-2xl font-bold">Department Settings</h1>
+                <p className="text-sm opacity-80">{department.name}</p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => navigate(`/admin/department/${id}`)} className="gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => navigate(`/admin/department/${id}`)}
+              className="gap-2 text-primary-foreground hover:bg-white/10 border border-white/20"
+            >
               <ArrowLeft className="w-4 h-4" />
               Back to Department
             </Button>

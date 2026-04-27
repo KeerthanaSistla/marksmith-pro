@@ -27,6 +27,7 @@ import {
   ChevronUp,
   Activity,
   Brain,
+  LogOut,
 } from "lucide-react";
 import StudentAnalytics from "@/components/student/StudentAnalytics";
 import StudentRiskAssessment from "@/components/student/RiskAssessment";
@@ -143,26 +144,36 @@ const StudentDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-gradient-primary text-primary-foreground shadow-lg">
-        <div className="container mx-auto px-4 py-6">
+      <header className="bg-gradient-to-r from-primary via-primary/80 to-accent text-primary-foreground shadow-lg">
+        <div className="container mx-auto px-4 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary-foreground/20 rounded-full flex items-center justify-center">
-                <GraduationCap className="w-7 h-7" />
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                <GraduationCap className="w-6 h-6" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold">Student Portal</h1>
-                <p className="text-primary-foreground/90 text-sm">{studentRecord?.name || "Student"} • {studentRecord?.rollNumber || ""} • {studentSection?.name} ({studentBatch?.name})</p>
+                <p className="text-sm opacity-80">{studentRecord?.name || "Student"} • {studentRecord?.rollNumber || ""} • {studentSection?.name} ({studentBatch?.name})</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              className="text-primary-foreground border-primary-foreground hover:bg-primary-foreground/20"
-              onClick={() => navigate("/student/settings")}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/student/settings")}
+                className="gap-2 text-primary-foreground hover:bg-white/10 border border-white/20"
+              >
+                <Settings className="w-4 h-4" />
+                Settings
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => { localStorage.removeItem("userRole"); localStorage.removeItem("userEmail"); navigate("/"); }}
+                className="gap-2 text-primary-foreground hover:bg-white/10 border border-white/20"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
