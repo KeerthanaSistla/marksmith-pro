@@ -237,23 +237,23 @@ function buildSeedStore() {
   const students = [];
 
   for (const batch of batches) {
-    let rollIdx = 1;
     for (const secName of ["IT1", "IT2", "IT3"]) {
       const sectionId = `${batch.id}-${secName}`;
       const currentSem = batchCurrentSemester(batch.startYear);
+      const roster = ROSTERS[sectionId] || [];
       const studentIds = [];
-      for (let i = 0; i < STUDENTS_PER_SECTION; i++, rollIdx++) {
-        const sid = `${batch.id}-${secName}-${rollIdx}`;
+      roster.forEach(([rollNumber, name], i) => {
+        const sid = `${sectionId}-${i + 1}`;
         studentIds.push(sid);
         students.push({
           id: sid,
-          rollNumber: buildRoll(batch.startYear, rollIdx),
-          name: STUDENT_NAMES[(rollIdx + (batch.startYear % 10) * 7) % STUDENT_NAMES.length],
+          rollNumber,
+          name,
           batchId: batch.id,
           sectionId,
           sectionName: secName,
         });
-      }
+      });
       sections.push({
         id: sectionId,
         name: secName,
