@@ -48,6 +48,27 @@ const FacultyDashboard = () => {
     });
   }, [facultyId, store]);
 
+  // Academic year filter
+  const academicYears = useMemo(() => {
+    const set = new Set(myAssignments.map((a) => a.academicYear).filter(Boolean));
+    return Array.from(set).sort();
+  }, [myAssignments]);
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState("all");
+
+  const displayedAssignments = useMemo(() => {
+    if (selectedAcademicYear === "all") return myAssignments;
+    return myAssignments.filter((a) => a.academicYear === selectedAcademicYear);
+  }, [myAssignments, selectedAcademicYear]);
+
+  const subjectsByYear = useMemo(() => {
+    const map = {};
+    for (const a of myAssignments) {
+      const y = a.academicYear || "—";
+      (map[y] = map[y] || []).push(a);
+    }
+    return map;
+  }, [myAssignments]);
+
   const [selectedAssignmentId, setSelectedAssignmentId] = useState(myAssignments[0]?.id || "");
   const selected = myAssignments.find((a) => a.id === selectedAssignmentId);
 
@@ -231,48 +252,77 @@ const FacultyDashboard = () => {
                     No teaching assignments allocated yet.
                   </p>
                 ) : (
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {myAssignments.map((a) => (
-                      <Card
-                        key={a.id}
-                        className={`cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 ${
-                          selectedAssignmentId === a.id ? "border-2 border-primary shadow-md" : "border-2 border-transparent"
-                        }`}
-                        onClick={() => { setSelectedAssignmentId(a.id); setSelectedTest(""); setBulkMarks({}); }}
-                      >
-                        <CardHeader className="pb-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1">
-                              <CardTitle className="text-xl mb-2">{a.subject.code}</CardTitle>
-                              <CardDescription className="text-sm leading-relaxed">{a.subject.name}</CardDescription>
-                            </div>
-                            <Badge variant={a.subject.type === "T" ? "default" : "secondary"} className="ml-2">
-                              {a.subject.type === "T" ? "Theory" : "Lab"}
-                            </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Section:</span>
-                            <span className="font-medium">{a.section?.name} ({a.batch?.name})</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Semester:</span>
-                            <span className="font-medium">Sem {a.semester}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Credits:</span>
-                            <span className="font-medium">{a.subject.credits}</span>
-                          </div>
-                          <Separator />
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Students:</span>
-                            <span className="font-semibold text-primary">{a.studentIds.length}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                  <>
+                    {/* Academic Year Filter Tabs */}
+                    {academicYears.length > 0 && (
+                      <div className="mb-6">
+                        <Tabs value={selectedAcademicYear} onValueChange={setSelectedAcademicYear} className="w-full">
+                          <TabsList className="flex flex-wrap h-auto">
+                            <TabsTrigger value="all" className="gap-1">
+                              All Years
+                              <Badge variant="secondary" className="ml-2">{myAssignments.length}</Badge>
+                            </TabsTrigger>
+                            {academicYears.map((year) => (
+                              <TabsTrigger key={year} value={year} className="gap-1">
+                                {year}
+                                <Badge variant="secondary" className="ml-2">{subjectsByYear[year]?.length || 0}</Badge>
+                              </TabsTrigger>
+                            ))}
+                          </TabsList>
+                        </Tabs>
+                      </div>
+                    )}
+
+                    {displayedAssignments.length === 0 ? (
+                      <p className="text-center text-muted-foreground py-8">
+                        No subjects taught in {selectedAcademicYear}.
+                      </p>
+                    ) : (
+                      <div className="grid md:grid-cols-3 gap-6">
+                        {displayedAssignments.map((a) => (
+                          <Card
+                            key={a.id}
+                            className={`cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 ${
+                              selectedAssignmentId === a.id ? "border-2 border-primary shadow-md" : "border-2 border-transparent"
+                            }`}
+                            onClick={() => { setSelectedAssignmentId(a.id); setSelectedTest(""); setBulkMarks({}); }}
+                          >
+                            <CardHeader className="pb-4">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex-1">
+                                  <CardTitle className="text-xl mb-2">{a.subject.code}</CardTitle>
+                                  <CardDescription className="text-sm leading-relaxed">{a.subject.name}</CardDescription>
+                                  {a.academicYear && (
+                                    <Badge variant="outline" className="mt-2">
+                                      {a.academicYear} • Sem {a.semester}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Badge variant={a.subject.type === "T" ? "default" : "secondary"} className="ml-2">
+                                  {a.subject.type === "T" ? "Theory" : "Lab"}
+                                </Badge>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Section:</span>
+                                <span className="font-medium">{a.section?.name} ({a.batch?.name})</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Credits:</span>
+                                <span className="font-medium">{a.subject.credits}</span>
+                              </div>
+                              <Separator />
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Students:</span>
+                                <span className="font-semibold text-primary">{a.studentIds.length}</span>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
