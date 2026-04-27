@@ -64,8 +64,6 @@ const SUBJECTS = [
   { code: "22CSC33", name: "Database Management Systems Lab", credits: 1, type: "P", semester: 4, abbreviation: "DBMS Lab" },
   { code: "22ITC06", name: "Algorithms Lab", credits: 1, type: "P", semester: 4, abbreviation: "DAA Lab" },
   { code: "22ITC07", name: "Mini Project - I", credits: 1, type: "P", semester: 4, abbreviation: "Mini Project-I" },
-  // Sem 4 (cross-listed elective from sem 3)
-  { code: "22ADE01", name: "Data Analysis and Visualization", credits: 3, type: "T", semester: 3, abbreviation: "DAV" },
   // Sem 5
   { code: "22CSC21", name: "Software Engineering", credits: 3, type: "T", semester: 5, abbreviation: "SE" },
   { code: "22ITC08", name: "Enterprise Application Development", credits: 3, type: "T", semester: 5, abbreviation: "EAD" },
