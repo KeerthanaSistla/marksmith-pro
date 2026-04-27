@@ -250,10 +250,6 @@ function buildSeedStore() {
         const chosenLab = pickSubset(labPool, labCount, `P|${batch.id}|${sec.id}|${sem}`);
         const chosen = [...chosenTheory, ...chosenLab];
         for (const sub of chosen) {
-          // single-iteration loop kept to minimise diff with original logic
-          {
-            const sec2 = sec;
-            const sub2 = sub;
           const seed = hashStr(`${batch.id}|${sec.id}|${sub.code}|${sem}`);
           const rand = mulberry32(seed);
           const fac = FACULTY[Math.floor(rand() * FACULTY.length)];
