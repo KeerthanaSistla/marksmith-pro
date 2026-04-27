@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Upload, Pencil, Trash2, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getStore } from "@/lib/dataStore";
 
 const designations = [
   "Professor",
@@ -16,14 +17,14 @@ const designations = [
   "Lab Instructor",
 ];
 
-const initialFaculty = [
-  { id: 1, facultyId: "FAC001", name: "Dr. John Smith", designation: "Professor" },
-  { id: 2, facultyId: "FAC002", name: "Dr. Sarah Johnson", designation: "Professor" },
-  { id: 3, facultyId: "FAC003", name: "Mr. Michael Brown", designation: "Associate Professor" },
-  { id: 4, facultyId: "FAC004", name: "Ms. Emily Davis", designation: "Assistant Professor" },
-  { id: 5, facultyId: "FAC005", name: "Mr. Robert Wilson", designation: "Lecturer" },
-  { id: 6, facultyId: "FAC006", name: "Ms. Jennifer Lee", designation: "Lab Instructor" },
-];
+const initialFaculty = getStore().faculty.map((f, idx) => ({
+  id: idx + 1,
+  facultyId: f.id,
+  name: f.name,
+  designation: f.designation,
+  email: f.email,
+  mobile: f.mobile,
+}));
 
 const FacultyTab = ({ departmentId }) => {
   const [faculty, setFaculty] = useState(initialFaculty);
