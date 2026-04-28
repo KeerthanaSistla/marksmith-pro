@@ -322,17 +322,17 @@ function buildSeedStore() {
   //
   // Skill is fixed per *student* (not per subject) so a weak student is
   // consistently weak across subjects. Distribution targets:
-  //   ~65% Safe      → skill 0.62 – 0.95
-  //   ~25% At Risk   → skill 0.45 – 0.60
-  //   ~10% Critical  → skill 0.25 – 0.45
+  //   ~65% Safe      → skill 0.60 – 0.95
+  //   ~25% At Risk   → skill 0.42 – 0.60
+  //   ~10% Critical  → skill 0.20 – 0.42
   const studentSkill = {};
   for (const stu of students) {
     const sr = mulberry32(hashStr(`skill|${stu.id}`));
     const bucket = sr();
     let skill;
-    if (bucket < 0.10)      skill = 0.25 + sr() * 0.20; // Critical
-    else if (bucket < 0.35) skill = 0.45 + sr() * 0.15; // At Risk
-    else                    skill = 0.62 + sr() * 0.33; // Safe
+    if (bucket < 0.10)      skill = 0.20 + sr() * 0.22; // Critical
+    else if (bucket < 0.35) skill = 0.42 + sr() * 0.18; // At Risk
+    else                    skill = 0.60 + sr() * 0.35; // Safe
     studentSkill[stu.id] = skill;
   }
 
