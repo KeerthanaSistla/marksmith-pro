@@ -553,6 +553,76 @@ export function buildStudentSemesterData(studentId) {
   return result;
 }
 
+// Build the data shape consumed by the risk engine for an entire class.
+// If facultyId is provided we include every student in every section that
+// faculty teaches, with subjects spanning that section's curriculum.
+export function buildClassRiskData(facultyId) {
+  const store = getStore();
+  const myAssignments = facultyId
+    ? store.assignments.filter((a) => a.facultyId === facultyId)
+    : store.assignments;
+
+  // Collect all unique (sectionId, semester) the faculty teaches
+  const sectionSemPairs = new Set();
+  myAssignments.forEach((a) => sectionSemPairs.add(`${a.sectionId}|${a.semester}`));
+
+  // For each section, build per-student subject list (full section curriculum)
+  const studentMap = new Map();
+  for (const pair of sectionSemPairs) {
+    const [sectionId, semStr] = pair.split("|");
+    const semester = parseInt(semStr, 10);
+    const sectionAssignments = store.assignments.filter(
+      (a) => a.sectionId === sectionId && a.semester === semester,
+    );
+    const studentIds = new Set();
+    sectionAssignments.forEach((a) => a.studentIds.forEach((sid) => studentIds.add(sid)));
+
+    for (const sid of studentIds) {
+      const stu = store.students.find((s) => s.id === sid);
+      if (!stu) continue;
+      const subjects = sectionAssignments
+        .filter((a) => a.studentIds.includes(sid))
+        .map((a) => {
+          const sub = store.subjects.find((s) => s.code === a.subjectCode);
+          const m = store.marks[`${a.id}|${sid}`] || {};
+          const isTheory = sub.type === "T";
+          return {
+            courseCode: sub.code,
+            name: sub.name,
+            type: isTheory ? "theory" : "lab",
+            credits: sub.credits,
+            marks: isTheory
+              ? {
+                  slipTests: m.slipTests || [0, 0, 0],
+                  assignments: m.assignments || [0, 0],
+                  classTests: m.classTests || [0, 0],
+                  attendance: m.attendance || 0,
+                }
+              : {
+                  weeklyCIE: m.weeklyCIE || [0, 0, 0],
+                  internalTests: m.internalTests || [0, 0],
+                },
+          };
+        });
+      // Merge if this student appears in multiple semesters this faculty teaches
+      if (studentMap.has(sid)) {
+        const existing = studentMap.get(sid);
+        const existingCodes = new Set(existing.subjects.map((s) => s.courseCode));
+        subjects.forEach((s) => { if (!existingCodes.has(s.courseCode)) existing.subjects.push(s); });
+      } else {
+        studentMap.set(sid, {
+          id: stu.id,
+          name: stu.name,
+          rollNo: stu.rollNo,
+          sectionId,
+          subjects,
+        });
+      }
+    }
+  }
+  return Array.from(studentMap.values());
+}
+
 // Default identity for demo logins
 export const DEFAULT_FACULTY_ID = "IT01";
 export function getDefaultStudentId() {
