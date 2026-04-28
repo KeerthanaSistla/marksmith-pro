@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import DepartmentPage from "./pages/DepartmentPage";
 import DepartmentSettings from "./pages/DepartmentSettings";
 import NotFound from "./pages/NotFound";
+import Chatbot from "./components/Chatbot";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/admin/department/:id/settings" element={<DepartmentSettings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <Chatbot />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
