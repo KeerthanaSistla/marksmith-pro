@@ -6,7 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
-import { computeStudentRiskProfile, TIERS } from "@/lib/riskEngine";
+import { computeStudentRiskProfile, CATEGORIES, AT_RISK_AVG_PCT, CRITICAL_AVG_PCT, FAIL_PCT } from "@/lib/riskEngine";
 
 const gradeColors = {
   S: "#27AE60", A: "#2980B9", B: "#8E44AD", C: "#E67E22", D: "#95A5A6", F: "#C0392B",
@@ -45,13 +45,19 @@ const StudentRiskAssessment = ({ semesterData, grades }) => {
   const currentSem = profile[profile.length - 1];
   const predictions = currentSem?.predictions || [];
 
-  // Overall risk level
+  // Standardised 3-category status (Safe / At Risk / Critical)
   const latestPct = currentSem?.overallPct || 0;
-  const riskLevel = latestPct < 40 ? "Critical" : latestPct < 50 ? "High" : latestPct < 60 ? "Moderate" : latestPct < 75 ? "Watch" : null;
+  const failCount = predictions.filter((p) => p.ciePct < FAIL_PCT).length;
+  let category;
+  if (latestPct < CRITICAL_AVG_PCT || failCount >= 2) category = "Critical";
+  else if (latestPct < AT_RISK_AVG_PCT || failCount >= 1) category = "At Risk";
+  else category = "Safe";
 
-  // Subjects at risk
-  const atRiskSubjects = predictions.filter(p => p.predictedGrade === "F" || p.predictedGrade === "D");
-  const strongSubjects = predictions.filter(p => p.predictedGrade === "S" || p.predictedGrade === "A");
+  const categoryMeta = CATEGORIES[category];
+
+  // Subjects at risk (predicted F or D)
+  const atRiskSubjects = predictions.filter((p) => p.predictedGrade === "F" || p.predictedGrade === "D");
+  const strongSubjects = predictions.filter((p) => p.predictedGrade === "S" || p.predictedGrade === "A");
 
   return (
     <div className="space-y-6">
@@ -60,23 +66,19 @@ const StudentRiskAssessment = ({ semesterData, grades }) => {
         <Card className="shadow-md">
           <CardContent className="pt-5 text-center">
             <Shield className="w-5 h-5 mx-auto mb-1 text-primary" />
-            <p className="text-xs text-muted-foreground">Current CIE %</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Current CIE %</p>
             <p className="text-3xl font-bold text-primary">{latestPct}%</p>
           </CardContent>
         </Card>
-        <Card className={`shadow-md ${riskLevel ? "border-destructive/30" : "border-accent/30"}`}>
+        <Card className="shadow-md" style={{ borderColor: `${categoryMeta.hex}55` }}>
           <CardContent className="pt-5 text-center">
-            {riskLevel ? (
-              <AlertTriangle className="w-5 h-5 mx-auto mb-1 text-destructive" />
-            ) : (
-              <Shield className="w-5 h-5 mx-auto mb-1 text-accent" />
-            )}
-            <p className="text-xs text-muted-foreground">Risk Level</p>
-            {riskLevel ? (
-              <Badge className="mt-1" style={{ backgroundColor: TIERS[riskLevel]?.hex, color: "white" }}>{riskLevel}</Badge>
-            ) : (
-              <Badge className="mt-1 bg-accent text-accent-foreground">Safe</Badge>
-            )}
+            {category === "Safe"
+              ? <Shield className="w-5 h-5 mx-auto mb-1 text-accent" />
+              : <AlertTriangle className="w-5 h-5 mx-auto mb-1" style={{ color: categoryMeta.hex }} />}
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Status</p>
+            <Badge className="mt-1" style={{ backgroundColor: categoryMeta.hex, color: "white" }}>
+              {category}
+            </Badge>
           </CardContent>
         </Card>
         <Card className="shadow-md">

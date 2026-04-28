@@ -13,7 +13,7 @@
 // place are reflected everywhere. Marks are seeded randomly on first run.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "intelligrade.store.v6";
+const STORAGE_KEY = "intelligrade.store.v7";
 
 // ─── Subject catalogue (full IT curriculum, sem 1-8) ────────────────────────
 const SUBJECTS = [
@@ -318,7 +318,24 @@ function buildSeedStore() {
 
   // ── Random CIE marks per (assignment, student) ──
   // Theory components: slipTests[3]/5, assignments[2]/10, classTests[2]/20, attendance/5
-  // Lab components:    weeklyCIE[3]/30, internalTests[2]/20
+  // Lab components:    weeklyCIE[3]/30, internalTests[2]/20  (max total = 50)
+  //
+  // Skill is fixed per *student* (not per subject) so a weak student is
+  // consistently weak across subjects. Distribution targets:
+  //   ~65% Safe      → skill 0.60 – 0.95
+  //   ~25% At Risk   → skill 0.42 – 0.60
+  //   ~10% Critical  → skill 0.20 – 0.42
+  const studentSkill = {};
+  for (const stu of students) {
+    const sr = mulberry32(hashStr(`skill|${stu.id}`));
+    const bucket = sr();
+    let skill;
+    if (bucket < 0.10)      skill = 0.20 + sr() * 0.22; // Critical
+    else if (bucket < 0.35) skill = 0.42 + sr() * 0.18; // At Risk
+    else                    skill = 0.60 + sr() * 0.35; // Safe
+    studentSkill[stu.id] = skill;
+  }
+
   const marks = {};
   for (const a of assignments) {
     const sub = SUBJECTS.find((s) => s.code === a.subjectCode);
@@ -326,9 +343,13 @@ function buildSeedStore() {
     for (const sid of a.studentIds) {
       const seed = hashStr(`${a.id}|${sid}`);
       const r = mulberry32(seed);
-      const skill = 0.55 + r() * 0.4; // student ability 55-95%
-      const noise = () => (r() - 0.5) * 0.2; // ±10%
-      const pct = () => Math.max(0, Math.min(1, skill + noise()));
+      const skill = studentSkill[sid] ?? (0.55 + r() * 0.4);
+      // Per-subject talent jitter: ±8%, so a student can over/underperform
+      // in individual subjects without changing their overall profile.
+      const subjectShift = (r() - 0.5) * 0.16;
+      const localSkill = Math.max(0.15, Math.min(0.98, skill + subjectShift));
+      const noise = () => (r() - 0.5) * 0.12; // ±6% per assessment
+      const pct = () => Math.max(0, Math.min(1, localSkill + noise()));
 
       let entry;
       if (isTheory) {
@@ -400,7 +421,9 @@ export function computeLabCIE(m) {
   const avg = (a) => (a && a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
   const weeklyCIE = Math.round(avg(m.weeklyCIE) * 10) / 10;
   const internalTests = Math.round(avg(m.internalTests) * 10) / 10;
-  return { weeklyCIE, internalTests, total: Math.round((weeklyCIE + internalTests) * 10) / 10 };
+  // Lab CIE max = 50 (avg weekly /30 + avg internal /20)
+  const total = Math.min(50, Math.round((weeklyCIE + internalTests) * 10) / 10);
+  return { weeklyCIE, internalTests, total };
 }
 export function computeCIETotal(subjectType, marks) {
   return subjectType === "T" ? computeTheoryCIE(marks).total : computeLabCIE(marks).total;
@@ -528,6 +551,76 @@ export function buildStudentSemesterData(studentId) {
     };
   }
   return result;
+}
+
+// Build the data shape consumed by the risk engine for an entire class.
+// If facultyId is provided we include every student in every section that
+// faculty teaches, with subjects spanning that section's curriculum.
+export function buildClassRiskData(facultyId) {
+  const store = getStore();
+  const myAssignments = facultyId
+    ? store.assignments.filter((a) => a.facultyId === facultyId)
+    : store.assignments;
+
+  // Collect all unique (sectionId, semester) the faculty teaches
+  const sectionSemPairs = new Set();
+  myAssignments.forEach((a) => sectionSemPairs.add(`${a.sectionId}|${a.semester}`));
+
+  // For each section, build per-student subject list (full section curriculum)
+  const studentMap = new Map();
+  for (const pair of sectionSemPairs) {
+    const [sectionId, semStr] = pair.split("|");
+    const semester = parseInt(semStr, 10);
+    const sectionAssignments = store.assignments.filter(
+      (a) => a.sectionId === sectionId && a.semester === semester,
+    );
+    const studentIds = new Set();
+    sectionAssignments.forEach((a) => a.studentIds.forEach((sid) => studentIds.add(sid)));
+
+    for (const sid of studentIds) {
+      const stu = store.students.find((s) => s.id === sid);
+      if (!stu) continue;
+      const subjects = sectionAssignments
+        .filter((a) => a.studentIds.includes(sid))
+        .map((a) => {
+          const sub = store.subjects.find((s) => s.code === a.subjectCode);
+          const m = store.marks[`${a.id}|${sid}`] || {};
+          const isTheory = sub.type === "T";
+          return {
+            courseCode: sub.code,
+            name: sub.name,
+            type: isTheory ? "theory" : "lab",
+            credits: sub.credits,
+            marks: isTheory
+              ? {
+                  slipTests: m.slipTests || [0, 0, 0],
+                  assignments: m.assignments || [0, 0],
+                  classTests: m.classTests || [0, 0],
+                  attendance: m.attendance || 0,
+                }
+              : {
+                  weeklyCIE: m.weeklyCIE || [0, 0, 0],
+                  internalTests: m.internalTests || [0, 0],
+                },
+          };
+        });
+      // Merge if this student appears in multiple semesters this faculty teaches
+      if (studentMap.has(sid)) {
+        const existing = studentMap.get(sid);
+        const existingCodes = new Set(existing.subjects.map((s) => s.courseCode));
+        subjects.forEach((s) => { if (!existingCodes.has(s.courseCode)) existing.subjects.push(s); });
+      } else {
+        studentMap.set(sid, {
+          id: stu.id,
+          name: stu.name,
+          rollNo: stu.rollNo,
+          sectionId,
+          subjects,
+        });
+      }
+    }
+  }
+  return Array.from(studentMap.values());
 }
 
 // Default identity for demo logins
