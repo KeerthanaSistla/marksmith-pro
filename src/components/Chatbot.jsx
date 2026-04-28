@@ -120,7 +120,7 @@ export default function Chatbot() {
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
 
           {messages.length <= 1 && (
             <div className="px-3 pb-2 flex flex-wrap gap-1.5">
