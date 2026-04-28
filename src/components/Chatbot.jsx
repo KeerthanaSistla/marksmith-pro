@@ -90,8 +90,8 @@ export default function Chatbot() {
             </div>
           </div>
 
-          <ScrollArea className="flex-1 px-3 py-3" viewportRef={scrollRef}>
-            <div ref={scrollRef} className="space-y-3">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="space-y-3">
               {messages.map((m, i) => (
                 <div
                   key={i}
