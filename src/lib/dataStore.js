@@ -421,7 +421,9 @@ export function computeLabCIE(m) {
   const avg = (a) => (a && a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
   const weeklyCIE = Math.round(avg(m.weeklyCIE) * 10) / 10;
   const internalTests = Math.round(avg(m.internalTests) * 10) / 10;
-  return { weeklyCIE, internalTests, total: Math.round((weeklyCIE + internalTests) * 10) / 10 };
+  // Lab CIE max = 50 (avg weekly /30 + avg internal /20)
+  const total = Math.min(50, Math.round((weeklyCIE + internalTests) * 10) / 10);
+  return { weeklyCIE, internalTests, total };
 }
 export function computeCIETotal(subjectType, marks) {
   return subjectType === "T" ? computeTheoryCIE(marks).total : computeLabCIE(marks).total;
