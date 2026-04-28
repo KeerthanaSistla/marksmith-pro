@@ -519,7 +519,7 @@ const FacultyDashboard = () => {
           </TabsContent>
 
           <TabsContent value="risk">
-            <RiskAssessment />
+            <RiskAssessment facultyId={facultyId} />
           </TabsContent>
         </Tabs>
       </main>
