@@ -13,7 +13,7 @@
 // place are reflected everywhere. Marks are seeded randomly on first run.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "intelligrade.store.v7";
+const STORAGE_KEY = "intelligrade.store.v8";
 
 // ─── Subject catalogue (full IT curriculum, sem 1-8) ────────────────────────
 const SUBJECTS = [
@@ -317,22 +317,22 @@ function buildSeedStore() {
   }
 
   // ── Random CIE marks per (assignment, student) ──
-  // Theory components: slipTests[3]/5, assignments[2]/10, classTests[2]/20, attendance/5
-  // Lab components:    weeklyCIE[3]/30, internalTests[2]/20  (max total = 50)
+  // Theory components: slipTests[3]/5, assignments[2]/10, classTests[2]/20, attendance/5  (max 40)
+  // Lab components:    weeklyCIE[3]/30, internalTests[2]/20  (max total = 50, hard-capped)
   //
-  // Skill is fixed per *student* (not per subject) so a weak student is
-  // consistently weak across subjects. Distribution targets:
-  //   ~65% Safe      → skill 0.60 – 0.95
-  //   ~25% At Risk   → skill 0.42 – 0.60
-  //   ~10% Critical  → skill 0.20 – 0.42
+  // Skill is fixed per *student* (not per subject). Targets:
+  //   ~65% Safe      (skill 0.72 – 0.98)  → theory CIE typically 28-38, lab 42-50
+  //   ~25% At Risk   (skill 0.60 – 0.72)  → theory CIE typically 24-30, lab 38-45
+  //   ~10% Critical  (skill 0.35 – 0.55)  → theory CIE typically 14-22, lab 25-38
+  // → ≈80% of students land with theory CIE ≥ 25 and lab CIE ≥ 40.
   const studentSkill = {};
   for (const stu of students) {
     const sr = mulberry32(hashStr(`skill|${stu.id}`));
     const bucket = sr();
     let skill;
-    if (bucket < 0.10)      skill = 0.20 + sr() * 0.22; // Critical
-    else if (bucket < 0.35) skill = 0.42 + sr() * 0.18; // At Risk
-    else                    skill = 0.60 + sr() * 0.35; // Safe
+    if (bucket < 0.10)      skill = 0.35 + sr() * 0.20; // Critical
+    else if (bucket < 0.35) skill = 0.60 + sr() * 0.12; // At Risk
+    else                    skill = 0.72 + sr() * 0.26; // Safe
     studentSkill[stu.id] = skill;
   }
 
@@ -343,12 +343,14 @@ function buildSeedStore() {
     for (const sid of a.studentIds) {
       const seed = hashStr(`${a.id}|${sid}`);
       const r = mulberry32(seed);
-      const skill = studentSkill[sid] ?? (0.55 + r() * 0.4);
-      // Per-subject talent jitter: ±8%, so a student can over/underperform
+      const skill = studentSkill[sid] ?? (0.75 + r() * 0.2);
+      // Per-subject talent jitter: ±6%, so a student can over/underperform
       // in individual subjects without changing their overall profile.
-      const subjectShift = (r() - 0.5) * 0.16;
-      const localSkill = Math.max(0.15, Math.min(0.98, skill + subjectShift));
-      const noise = () => (r() - 0.5) * 0.12; // ±6% per assessment
+      const subjectShift = (r() - 0.5) * 0.12;
+      const baseSkill = Math.max(0.20, Math.min(0.99, skill + subjectShift));
+      const noise = () => (r() - 0.5) * 0.10; // ±5% per assessment
+      // Labs are graded more leniently in practice → boost the effective skill.
+      const localSkill = isTheory ? baseSkill : Math.min(0.99, baseSkill + 0.10);
       const pct = () => Math.max(0, Math.min(1, localSkill + noise()));
 
       let entry;
