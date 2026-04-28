@@ -13,7 +13,7 @@
 // place are reflected everywhere. Marks are seeded randomly on first run.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "intelligrade.store.v7";
+const STORAGE_KEY = "intelligrade.store.v8";
 
 // ─── Subject catalogue (full IT curriculum, sem 1-8) ────────────────────────
 const SUBJECTS = [
