@@ -13,7 +13,7 @@
 // place are reflected everywhere. Marks are seeded randomly on first run.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "intelligrade.store.v6";
+const STORAGE_KEY = "intelligrade.store.v7";
 
 // ─── Subject catalogue (full IT curriculum, sem 1-8) ────────────────────────
 const SUBJECTS = [
@@ -318,7 +318,24 @@ function buildSeedStore() {
 
   // ── Random CIE marks per (assignment, student) ──
   // Theory components: slipTests[3]/5, assignments[2]/10, classTests[2]/20, attendance/5
-  // Lab components:    weeklyCIE[3]/30, internalTests[2]/20
+  // Lab components:    weeklyCIE[3]/30, internalTests[2]/20  (max total = 50)
+  //
+  // Skill is fixed per *student* (not per subject) so a weak student is
+  // consistently weak across subjects. Distribution targets:
+  //   ~65% Safe      → skill 0.62 – 0.95
+  //   ~25% At Risk   → skill 0.45 – 0.60
+  //   ~10% Critical  → skill 0.25 – 0.45
+  const studentSkill = {};
+  for (const stu of students) {
+    const sr = mulberry32(hashStr(`skill|${stu.id}`));
+    const bucket = sr();
+    let skill;
+    if (bucket < 0.10)      skill = 0.25 + sr() * 0.20; // Critical
+    else if (bucket < 0.35) skill = 0.45 + sr() * 0.15; // At Risk
+    else                    skill = 0.62 + sr() * 0.33; // Safe
+    studentSkill[stu.id] = skill;
+  }
+
   const marks = {};
   for (const a of assignments) {
     const sub = SUBJECTS.find((s) => s.code === a.subjectCode);
@@ -326,9 +343,13 @@ function buildSeedStore() {
     for (const sid of a.studentIds) {
       const seed = hashStr(`${a.id}|${sid}`);
       const r = mulberry32(seed);
-      const skill = 0.55 + r() * 0.4; // student ability 55-95%
-      const noise = () => (r() - 0.5) * 0.2; // ±10%
-      const pct = () => Math.max(0, Math.min(1, skill + noise()));
+      const skill = studentSkill[sid] ?? (0.55 + r() * 0.4);
+      // Per-subject talent jitter: ±8%, so a student can over/underperform
+      // in individual subjects without changing their overall profile.
+      const subjectShift = (r() - 0.5) * 0.16;
+      const localSkill = Math.max(0.15, Math.min(0.98, skill + subjectShift));
+      const noise = () => (r() - 0.5) * 0.12; // ±6% per assessment
+      const pct = () => Math.max(0, Math.min(1, localSkill + noise()));
 
       let entry;
       if (isTheory) {
