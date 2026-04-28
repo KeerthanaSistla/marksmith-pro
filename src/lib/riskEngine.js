@@ -1,214 +1,152 @@
 /**
  * IntelliGrade — At-Risk Student Detection Engine (Client-Side)
- * Adapted from the Python IntelliGrade v2 system.
- * 
- * Weighted Risk Score | 4-Tier Classification | Subject-Level Analysis
+ *
+ * Standardised 3-category model:  Safe  |  At Risk  |  Critical
+ *
+ *   Critical : credit-weighted CIE avg < 45%   OR  ≥ 2 failed subjects (<40%)
+ *   At Risk  : credit-weighted CIE avg < 55%   OR  ≥ 1 failed subject
+ *   Safe     : everything else
+ *
+ * A "risk score" (0-100) is also produced for sorting/visualisation, but the
+ * category above is the single source of truth that every UI uses.
  */
 
-// ─── Risk Score Weights ───
-const W_FAILING_SUBJECT = 15;
-const W_HIGH_CREDIT_FAIL = 8;
-const W_LOW_PERCENTILE = 3;
-const W_LOW_OVERALL_AVG = 20;
-const W_MODERATE_AVG = 10;
-const W_MULTI_LAB_FAIL = 10;
+// ─── Thresholds (single source of truth) ───────────────────────────────────
+export const FAIL_PCT = 40;          // CIE % below which a subject is "failed"
+export const CRITICAL_AVG_PCT = 45;
+export const AT_RISK_AVG_PCT = 55;
+export const CRITICAL_FAIL_COUNT = 2;
 
-// ─── Thresholds ───
-const FAIL_PCT = 40;
-const HIGH_CREDIT_RISK_PCT = 50;
-const LOW_PERCENTILE_CUT = 25;
-const LOW_AVG_PCT = 50;
-const MOD_AVG_PCT = 60;
-
-// ─── Tier mapping ───
-export const TIERS = {
-  Critical: { lo: 75, hi: 100, color: "hsl(var(--destructive))", bgClass: "bg-destructive", textClass: "text-destructive", hex: "#C0392B" },
-  High:     { lo: 50, hi: 74,  color: "hsl(25, 75%, 52%)",       bgClass: "bg-warning",     textClass: "text-warning",     hex: "#E67E22" },
-  Moderate: { lo: 25, hi: 49,  color: "hsl(48, 89%, 56%)",       bgClass: "bg-yellow-400",  textClass: "text-yellow-600",  hex: "#F1C40F" },
-  Watch:    { lo: 1,  hi: 24,  color: "hsl(var(--accent))",      bgClass: "bg-accent",      textClass: "text-accent",      hex: "#27AE60" },
+// ─── Category metadata (used by every chart/badge) ─────────────────────────
+export const CATEGORIES = {
+  Safe:       { color: "hsl(142, 71%, 45%)", hex: "#16A34A", bgClass: "bg-accent",     textClass: "text-accent" },
+  "At Risk":  { color: "hsl(38, 92%, 50%)",  hex: "#F59E0B", bgClass: "bg-warning",    textClass: "text-warning" },
+  Critical:   { color: "hsl(0, 84%, 50%)",   hex: "#DC2626", bgClass: "bg-destructive",textClass: "text-destructive" },
 };
+export const CATEGORY_ORDER = ["Critical", "At Risk", "Safe"];
 
-export const TIER_ORDER = ["Critical", "High", "Moderate", "Watch"];
+// Legacy alias (kept so any old imports don't break)
+export const TIERS = CATEGORIES;
+export const TIER_ORDER = CATEGORY_ORDER;
 
-export function getTier(score) {
-  for (const [tier, { lo, hi }] of Object.entries(TIERS)) {
-    if (score >= lo && score <= hi) return tier;
-  }
-  return null;
-}
-
-export function getIntervention(tier) {
-  if (tier === "Critical") return "Immediate";
-  if (tier === "High") return "This week";
-  if (tier === "Moderate") return "This month";
+export function getIntervention(category) {
+  if (category === "Critical") return "Immediate";
+  if (category === "At Risk") return "This week";
   return "Monitor";
 }
 
-// ─── CIE calculation helpers ───
-function calculateTheoryCIE(marks) {
-  const avgSlip = marks.slipTests.reduce((a, b) => a + b, 0) / marks.slipTests.length;
-  const avgAssign = marks.assignments.reduce((a, b) => a + b, 0) / marks.assignments.length;
-  const avgClass = marks.classTests.reduce((a, b) => a + b, 0) / marks.classTests.length;
-  return avgSlip + avgAssign + avgClass + marks.attendance;
+// ─── CIE calculators ───────────────────────────────────────────────────────
+function calculateTheoryCIE(m) {
+  const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+  const slips = (m.slipTests || []).slice().sort((a, b) => b - a).slice(0, 2);
+  return avg(slips) + avg(m.assignments) + avg(m.classTests) + (m.attendance || 0);
 }
-
-function calculateLabCIE(marks) {
-  const weeklyTotal = marks.weeklyCIE.reduce((a, b) => a + b, 0);
-  const internalTotal = marks.internalTests.reduce((a, b) => a + b, 0);
-  return weeklyTotal + internalTotal;
+function calculateLabCIE(m) {
+  const avg = (a) => (a && a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
+  // Cap at 50 — lab CIE max is 50 marks (avg weekly /30 + avg internal /20).
+  return Math.min(50, avg(m.weeklyCIE) + avg(m.internalTests));
 }
-
-function getMaxCIE(type) {
-  return type === "theory" ? 40 : 50;
-}
+function getMaxCIE(type) { return type === "theory" ? 40 : 50; }
 
 function getCIEPct(subject) {
-  const cie = subject.type === "theory"
-    ? calculateTheoryCIE(subject.marks)
-    : calculateLabCIE(subject.marks);
+  const cie = subject.type === "theory" ? calculateTheoryCIE(subject.marks) : calculateLabCIE(subject.marks);
   return (cie / getMaxCIE(subject.type)) * 100;
 }
 
-// ─── Percentile calculation ───
-function percentileRank(values, index) {
-  const val = values[index];
-  const below = values.filter(v => v < val).length;
-  return (below / values.length) * 100;
-}
+// ─── Categorise a single student ───────────────────────────────────────────
+export function categoriseStudent(student) {
+  let totalCredits = 0;
+  let weightedSum = 0;
+  let failCount = 0;
+  const subjectCIEs = {};
+  const failSubjects = [];
 
-/**
- * Compute risk scores for an array of students.
- * Each student: { id, name, rollNo, subjects: [{ courseCode, name, type, credits, marks }] }
- * Returns: { riskStudents, subjectStats, summary }
- */
-export function computeRiskScores(students) {
-  if (!students || students.length === 0) {
-    return { riskStudents: [], subjectStats: [], summary: { total: 0, atRisk: 0, safe: 0, tiers: {} } };
-  }
+  student.subjects.forEach((sub) => {
+    const cie = sub.type === "theory" ? calculateTheoryCIE(sub.marks) : calculateLabCIE(sub.marks);
+    const max = getMaxCIE(sub.type);
+    const pct = (cie / max) * 100;
+    subjectCIEs[sub.courseCode] = { cie, pct, subject: sub };
 
-  // Gather all unique subjects
-  const allSubjects = {};
-  students.forEach(s => {
-    s.subjects.forEach(sub => {
-      if (!allSubjects[sub.courseCode]) {
-        allSubjects[sub.courseCode] = { ...sub, cieScores: [] };
-      }
-    });
-  });
-
-  // Compute CIE for each student×subject
-  const studentCIEs = students.map(student => {
-    const cies = {};
-    student.subjects.forEach(sub => {
-      const cie = sub.type === "theory" ? calculateTheoryCIE(sub.marks) : calculateLabCIE(sub.marks);
-      cies[sub.courseCode] = { cie, pct: (cie / getMaxCIE(sub.type)) * 100, subject: sub };
-      if (allSubjects[sub.courseCode]) {
-        allSubjects[sub.courseCode].cieScores.push(cie);
-      }
-    });
-    return { student, cies };
-  });
-
-  // Compute percentile ranks per subject
-  const percentiles = {};
-  Object.entries(allSubjects).forEach(([code, subData]) => {
-    const sorted = [...subData.cieScores].sort((a, b) => a - b);
-    percentiles[code] = sorted;
-  });
-
-  // Score each student
-  const riskStudents = [];
-
-  studentCIEs.forEach(({ student, cies }) => {
-    let score = 0;
-    const flags = [];
-    const failSubjects = [];
-    const hcRiskSubjects = [];
-    const lowPctileSubjects = [];
-    const labFailSubjects = [];
-
-    // Credit-weighted average
-    let totalCredits = 0;
-    let weightedSum = 0;
-
-    Object.entries(cies).forEach(([code, { cie, pct, subject }]) => {
-      const maxCIE = getMaxCIE(subject.type);
-      const isLab = subject.type === "lab";
-
-      totalCredits += subject.credits;
-      weightedSum += subject.credits * pct;
-
-      // Failing?
-      if (pct < FAIL_PCT) {
-        failSubjects.push({ code, name: subject.name, cie, max: maxCIE, pct });
-        score += W_FAILING_SUBJECT;
-        if (isLab) labFailSubjects.push(code);
-      }
-
-      // High-credit risk?
-      if (subject.credits >= 3 && pct < HIGH_CREDIT_RISK_PCT) {
-        hcRiskSubjects.push({ code, name: subject.name, cie, max: maxCIE, pct });
-        score += W_HIGH_CREDIT_FAIL;
-      }
-
-      // Low percentile?
-      const subjScores = percentiles[code] || [];
-      if (subjScores.length > 1) {
-        const rank = (subjScores.filter(v => v < cie).length / subjScores.length) * 100;
-        if (rank <= LOW_PERCENTILE_CUT) {
-          lowPctileSubjects.push({ code, name: subject.name, rank: Math.round(rank) });
-          score += W_LOW_PERCENTILE;
-        }
-      }
-    });
-
-    // Multi-lab failure
-    if (labFailSubjects.length >= 2) score += W_MULTI_LAB_FAIL;
-
-    // Overall average
-    const avgPct = totalCredits > 0 ? weightedSum / totalCredits : 0;
-    if (avgPct < LOW_AVG_PCT) score += W_LOW_OVERALL_AVG;
-    else if (avgPct < MOD_AVG_PCT) score += W_MODERATE_AVG;
-
-    score = Math.min(score, 100);
-    const tier = getTier(score);
-
-    if (tier) {
-      if (failSubjects.length > 0) flags.push(`Failing: ${failSubjects.map(s => `${s.name} (${s.cie.toFixed(0)}/${s.max})`).join(", ")}`);
-      if (hcRiskSubjects.length > 0 && failSubjects.length === 0) flags.push(`High-credit risk: ${hcRiskSubjects.map(s => `${s.name}`).join(", ")}`);
-      if (labFailSubjects.length >= 2) flags.push(`Multiple lab failures (${labFailSubjects.length})`);
-      if (lowPctileSubjects.length > 0) flags.push(`Bottom ${LOW_PERCENTILE_CUT}th percentile in ${lowPctileSubjects.length} subjects`);
-      if (avgPct < LOW_AVG_PCT) flags.push(`Overall avg ${avgPct.toFixed(1)}% < ${LOW_AVG_PCT}%`);
-      else if (avgPct < MOD_AVG_PCT) flags.push(`Overall avg ${avgPct.toFixed(1)}% < ${MOD_AVG_PCT}%`);
-
-      riskStudents.push({
-        id: student.id,
-        name: student.name,
-        rollNo: student.rollNo,
-        tier,
-        score,
-        avgPct: Math.round(avgPct * 10) / 10,
-        failCount: failSubjects.length,
-        hcRiskCount: hcRiskSubjects.length,
-        lowPctileCount: lowPctileSubjects.length,
-        labFailCount: labFailSubjects.length,
-        failSubjects,
-        hcRiskSubjects,
-        lowPctileSubjects,
-        flags,
-        intervention: getIntervention(tier),
-        subjectCIEs: cies,
-      });
+    if (sub.credits > 0) {
+      totalCredits += sub.credits;
+      weightedSum += sub.credits * pct;
+    }
+    if (pct < FAIL_PCT) {
+      failCount += 1;
+      failSubjects.push({ code: sub.courseCode, name: sub.name, cie, max, pct });
     }
   });
 
-  riskStudents.sort((a, b) => b.score - a.score || a.avgPct - b.avgPct);
+  const avgPct = totalCredits > 0 ? weightedSum / totalCredits : 0;
+
+  let category;
+  if (avgPct < CRITICAL_AVG_PCT || failCount >= CRITICAL_FAIL_COUNT) category = "Critical";
+  else if (avgPct < AT_RISK_AVG_PCT || failCount >= 1) category = "At Risk";
+  else category = "Safe";
+
+  // Risk score (0-100) derived from category + avg, used only for sort/charts.
+  let score;
+  if (category === "Critical") score = Math.round(75 + Math.max(0, (CRITICAL_AVG_PCT - avgPct)) * 1.2 + failCount * 3);
+  else if (category === "At Risk") score = Math.round(45 + Math.max(0, (AT_RISK_AVG_PCT - avgPct)) * 1.5 + failCount * 4);
+  else score = Math.max(1, Math.round(30 - (avgPct - AT_RISK_AVG_PCT) * 0.5));
+  score = Math.max(1, Math.min(100, score));
+
+  const flags = [];
+  if (failSubjects.length > 0) {
+    flags.push(`Failing: ${failSubjects.map((s) => `${s.name} (${s.cie.toFixed(0)}/${s.max})`).join(", ")}`);
+  }
+  if (avgPct < CRITICAL_AVG_PCT) flags.push(`Overall avg ${avgPct.toFixed(1)}% — critical`);
+  else if (avgPct < AT_RISK_AVG_PCT) flags.push(`Overall avg ${avgPct.toFixed(1)}% — below safe threshold`);
+  if (failCount >= 2) flags.push(`${failCount} subject failures`);
+
+  return {
+    id: student.id,
+    name: student.name,
+    rollNo: student.rollNo,
+    category,
+    tier: category, // legacy alias for old UI
+    score,
+    avgPct: Math.round(avgPct * 10) / 10,
+    failCount,
+    failSubjects,
+    flags,
+    intervention: getIntervention(category),
+    subjectCIEs,
+  };
+}
+
+/**
+ * Compute risk for a class. Returns ALL students (categorised) plus rollups.
+ */
+export function computeRiskScores(students) {
+  if (!students || students.length === 0) {
+    return {
+      allStudents: [],
+      riskStudents: [],
+      subjectStats: [],
+      summary: { total: 0, atRisk: 0, safe: 0, critical: 0, categories: { Safe: 0, "At Risk": 0, Critical: 0 } },
+    };
+  }
+
+  const allStudents = students.map(categoriseStudent).sort((a, b) => b.score - a.score);
+  const riskStudents = allStudents.filter((s) => s.category !== "Safe");
 
   // Subject-level stats
+  const allSubjects = {};
+  students.forEach((s) => {
+    s.subjects.forEach((sub) => {
+      if (!allSubjects[sub.courseCode]) {
+        allSubjects[sub.courseCode] = { ...sub, cieScores: [] };
+      }
+      const cie = sub.type === "theory" ? calculateTheoryCIE(sub.marks) : calculateLabCIE(sub.marks);
+      allSubjects[sub.courseCode].cieScores.push(cie);
+    });
+  });
+
   const subjectStats = Object.entries(allSubjects).map(([code, subData]) => {
     const scores = subData.cieScores;
     const max = getMaxCIE(subData.type);
-    const failCount = scores.filter(s => (s / max) * 100 < FAIL_PCT).length;
+    const failCount = scores.filter((s) => (s / max) * 100 < FAIL_PCT).length;
     const mean = scores.reduce((a, b) => a + b, 0) / scores.length;
     return {
       code,
@@ -223,32 +161,31 @@ export function computeRiskScores(students) {
     };
   }).sort((a, b) => b.failures - a.failures);
 
-  // Summary
-  const tierCounts = {};
-  TIER_ORDER.forEach(t => { tierCounts[t] = riskStudents.filter(s => s.tier === t).length; });
+  const categories = { Safe: 0, "At Risk": 0, Critical: 0 };
+  allStudents.forEach((s) => { categories[s.category] += 1; });
 
   return {
+    allStudents,
     riskStudents,
     subjectStats,
     summary: {
       total: students.length,
-      atRisk: riskStudents.length,
-      safe: students.length - riskStudents.length,
-      tiers: tierCounts,
+      safe: categories.Safe,
+      atRisk: categories["At Risk"],
+      critical: categories.Critical,
+      categories,
+      // legacy field used by older UI bits
+      tiers: categories,
     },
   };
 }
 
 /**
- * Simple performance prediction based on CIE trends.
- * Given a student's CIE marks across components, predict likely final grade.
+ * Predict likely final grade from CIE marks. Used on student dashboard.
  */
 export function predictPerformance(subject) {
   const ciePct = getCIEPct(subject);
-
-  // Weighted prediction: CIE performance strongly correlates with final outcome
-  // Apply a regression-like adjustment (students typically perform slightly better in SEE)
-  const predictedTotal = ciePct * 0.85 + 15; // baseline adjustment
+  const predictedTotal = ciePct * 0.85 + 15;
   const confidence = Math.min(95, Math.max(40, 50 + (ciePct - 50) * 0.9));
 
   let predictedGrade;
@@ -259,7 +196,6 @@ export function predictPerformance(subject) {
   else if (predictedTotal >= 50) predictedGrade = "D";
   else predictedGrade = "F";
 
-  // Trend analysis from component scores
   let trend = "Stable";
   if (subject.type === "theory") {
     const { slipTests, classTests } = subject.marks;
@@ -280,7 +216,7 @@ export function predictPerformance(subject) {
 }
 
 /**
- * Compute a personal risk profile for a single student across semesters.
+ * Personal risk profile across semesters.
  */
 export function computeStudentRiskProfile(semesterData, grades) {
   const semesterRisks = [];
@@ -292,7 +228,7 @@ export function computeStudentRiskProfile(semesterData, grades) {
     let totalMax = 0;
     const predictions = [];
 
-    data.subjects.forEach(sub => {
+    data.subjects.forEach((sub) => {
       const cie = sub.type === "theory" ? calculateTheoryCIE(sub.marks) : calculateLabCIE(sub.marks);
       const max = getMaxCIE(sub.type);
       totalCIE += cie;
