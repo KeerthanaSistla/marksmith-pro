@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, ChevronDown, Pencil, Trash2, BookOpen, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import AiSyllabusUpload from "./AiSyllabusUpload";
 
 // Full IT department curriculum (Semesters 1-8)
 // Note: All projects, internships, mini-projects, seminars are treated as Practical (P).
