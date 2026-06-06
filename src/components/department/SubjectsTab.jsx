@@ -369,9 +369,36 @@ const SubjectsTab = ({ departmentId }) => {
     </div>
   );
 
+  const handleAiImport = (newSubjects) => {
+    setSemesters((prev) =>
+      prev.map((sem) => {
+        const additions = newSubjects
+          .filter((s) => Number(s.semester) === sem.number)
+          .map((s, idx) => ({
+            id: `${sem.id}-ai-${Date.now()}-${idx}`,
+            code: s.code,
+            name: s.name,
+            abbreviation: s.abbreviation || s.code,
+            credits: Number(s.credits) || 0,
+            type: s.type === "P" ? "P" : "T",
+            semester: sem.number,
+          }));
+        if (additions.length === 0) return sem;
+        const existing = new Set(sem.subjects.map((x) => x.code));
+        const deduped = additions.filter((a) => !existing.has(a.code));
+        setOpenSemesters((p) => ({ ...p, [sem.id]: true }));
+        return { ...sem, subjects: [...sem.subjects, ...deduped] };
+      }),
+    );
+  };
+
   return (
     <div className="space-y-6">
       <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+
+      <AiSyllabusUpload onApprove={handleAiImport} />
+
+
 
       <div className="space-y-4">
         {semesters.map((sem) => (
