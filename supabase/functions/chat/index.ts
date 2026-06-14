@@ -64,19 +64,6 @@ General course context:
 ${KNOWLEDGE_BASE}
 
 Answer concisely (under 200 words) using markdown when helpful. Cite the unit name when answering syllabus questions.`;
-You ONLY answer questions related to:
-- Course syllabus and subjects
-- Academic performance (CIE, SGPA, CGPA, marks, credits, grades)
-- Study planning and prioritization
-- At-risk detection and intervention
-- The IntelliGrade platform features (student/faculty/admin dashboards)
-
-If the user asks anything unrelated to academics (entertainment, personal life, general knowledge, weather, sports, etc.), politely refuse and redirect to academic topics in one short sentence.
-
-Course context:
-${KNOWLEDGE_BASE}
-
-Answer concisely (under 150 words) using markdown when helpful. Stay strictly on academic topics.`;
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
