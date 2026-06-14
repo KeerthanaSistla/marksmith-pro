@@ -5,8 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Users, BookOpen, Upload, Eye, Activity, Brain, LogOut } from "lucide-react";
-import FacultyAnalytics from "@/components/faculty/FacultyAnalytics";
+import { Settings, Users, BookOpen, Upload, Eye, Brain, LogOut } from "lucide-react";
 import RiskAssessment from "@/components/faculty/RiskAssessment";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -223,15 +222,12 @@ const FacultyDashboard = () => {
 
       <main className="container mx-auto px-6 py-10">
         <Tabs defaultValue="subjects" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-12 mb-8">
+          <TabsList className="grid w-full grid-cols-2 h-12 mb-8">
             <TabsTrigger value="subjects" className="text-base">
               <BookOpen className="w-4 h-4 mr-2" /> Subjects & Marks
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-base">
-              <Activity className="w-4 h-4 mr-2" /> Analytics
-            </TabsTrigger>
             <TabsTrigger value="risk" className="text-base">
-              <Brain className="w-4 h-4 mr-2" /> Risk Assessment
+              <Brain className="w-4 h-4 mr-2" /> Performance & Risk
             </TabsTrigger>
           </TabsList>
 
@@ -512,10 +508,6 @@ const FacultyDashboard = () => {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <FacultyAnalytics subjects={analyticsSubjects} />
           </TabsContent>
 
           <TabsContent value="risk">
