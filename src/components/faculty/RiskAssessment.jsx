@@ -2,11 +2,11 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertTriangle, Shield, Users, TrendingDown, Eye, ChevronRight, Activity } from "lucide-react";
+import { AlertTriangle, Shield, Users, TrendingDown, Eye, ChevronRight, Activity, BarChart3 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis,
+  PolarAngleAxis, PolarRadiusAxis, LineChart, Line,
 } from "recharts";
 import {
   computeRiskScores, CATEGORIES, CATEGORY_ORDER, predictPerformance,
