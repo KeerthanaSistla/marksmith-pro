@@ -50,6 +50,30 @@ const RiskAssessment = ({ facultyId = DEFAULT_FACULTY_ID }) => {
     fullName: s.name,
   }));
 
+  // Predicted-grade distribution across the whole class (from CIE)
+  const gradeDist = useMemo(() => {
+    const buckets = { S: 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
+    allStudents.forEach((st) => {
+      Object.values(st.subjectCIEs).forEach(({ pct }) => {
+        const predicted = pct * 0.85 + 15;
+        if (predicted >= 90) buckets.S++;
+        else if (predicted >= 80) buckets.A++;
+        else if (predicted >= 70) buckets.B++;
+        else if (predicted >= 60) buckets.C++;
+        else if (predicted >= 50) buckets.D++;
+        else buckets.F++;
+      });
+    });
+    const colors = { S: "#16A34A", A: "#2563EB", B: "#7C3AED", C: "#F59E0B", D: "#94A3B8", F: "#DC2626" };
+    return Object.entries(buckets).map(([grade, count]) => ({ grade, count, color: colors[grade] }));
+  }, [allStudents]);
+
+  // Class average CIE % across taught subjects (sorted by code)
+  const subjectAvgData = subjectStats
+    .slice()
+    .sort((a, b) => a.code.localeCompare(b.code))
+    .map((s) => ({ name: s.code, avg: s.classMeanPct, fullName: s.name }));
+
   const safePct = summary.total ? Math.round((summary.safe / summary.total) * 100) : 0;
   const atRiskPct = summary.total ? Math.round((summary.atRisk / summary.total) * 100) : 0;
   const criticalPct = summary.total ? Math.round((summary.critical / summary.total) * 100) : 0;
