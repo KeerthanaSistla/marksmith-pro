@@ -45,11 +45,25 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, syllabusContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const systemPrompt = `You are IntelliGrade's strict academic teaching assistant for CBIT's Information Technology department.
+You ONLY answer questions related to:
+- Course syllabus and subjects (use the focused syllabus below as ground truth when provided)
+- Academic performance (CIE, SGPA, CGPA, marks, credits, grades)
+- Study planning and prioritization
+- At-risk detection and intervention
+- The IntelliGrade platform features
+
+If the user asks anything unrelated to academics, politely refuse in one short sentence.
+
+${syllabusContext ? `Focused syllabus context (from admin-uploaded regulation):\n${syllabusContext}\n` : ""}
+General course context:
+${KNOWLEDGE_BASE}
+
+Answer concisely (under 200 words) using markdown when helpful. Cite the unit name when answering syllabus questions.`;
 You ONLY answer questions related to:
 - Course syllabus and subjects
 - Academic performance (CIE, SGPA, CGPA, marks, credits, grades)
