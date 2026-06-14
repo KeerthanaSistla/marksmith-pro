@@ -11,16 +11,51 @@ import { Sparkles, FileUp, Loader2, CheckCircle2, Trash2, FileText, Brain, BookO
 import { useToast } from "@/hooks/use-toast";
 
 // Mock extraction — replace with real LlamaParse + Gemini pipeline later.
-// Returns a believable list of subjects the admin can review.
+// Each subject ships with 5 syllabus units (title + topics) that drive the
+// student AI Zone (flashcards, notes, MCQs, audio overviews, doubt chat).
+const mkUnits = (name, custom) => custom || [
+  { title: `Unit I — Foundations of ${name}`, topics: ["Introduction", "Terminology", "Scope & motivation"] },
+  { title: `Unit II — Core Concepts`,         topics: ["Theoretical principles", "Standard models", "Worked examples"] },
+  { title: `Unit III — Techniques & Methods`, topics: ["Algorithms", "Design patterns", "Trade-offs"] },
+  { title: `Unit IV — Advanced Topics`,       topics: ["Optimization", "Tooling", "Case studies"] },
+  { title: `Unit V — Applications`,           topics: ["Industry use-cases", "Best practices", "Open problems"] },
+];
+
 const MOCK_EXTRACTED = [
-  { code: "22ITC08", name: "Enterprise Application Development", credits: 3, type: "T", semester: 5, abbreviation: "EAD" },
-  { code: "22CAC17", name: "Machine Learning", credits: 3, type: "T", semester: 5, abbreviation: "ML" },
-  { code: "22ITC10", name: "Computer Networks", credits: 3, type: "T", semester: 5, abbreviation: "CN" },
-  { code: "22ITC12", name: "Formal Languages and Automata Theory", credits: 3, type: "T", semester: 5, abbreviation: "FLAT" },
-  { code: "22CSC21", name: "Software Engineering", credits: 3, type: "T", semester: 5, abbreviation: "SE" },
-  { code: "22ITC09", name: "Enterprise Application Development Lab", credits: 1, type: "P", semester: 5, abbreviation: "EAD Lab" },
-  { code: "22ITC11", name: "Computer Networks Lab", credits: 1, type: "P", semester: 5, abbreviation: "CN Lab" },
-  { code: "22CAC18", name: "Machine Learning Lab", credits: 1, type: "P", semester: 5, abbreviation: "ML Lab" },
+  { code: "22ITC08", name: "Enterprise Application Development", credits: 3, type: "T", semester: 5, abbreviation: "EAD",
+    units: mkUnits("Enterprise Application Development", [
+      { title: "Unit I — Enterprise Architecture", topics: ["N-tier architecture", "Java EE platform", "Containers and contexts"] },
+      { title: "Unit II — Servlets & JSP", topics: ["Servlet lifecycle", "Sessions and cookies", "JSP & EL", "MVC pattern"] },
+      { title: "Unit III — Spring Framework", topics: ["IoC and DI", "Spring Boot", "Spring MVC", "Bean scopes"] },
+      { title: "Unit IV — Persistence", topics: ["JDBC", "JPA / Hibernate", "ORM mapping", "Transactions"] },
+      { title: "Unit V — REST & Microservices", topics: ["RESTful APIs", "JSON / XML", "Security basics", "Deployment"] },
+    ]) },
+  { code: "22CAC17", name: "Machine Learning", credits: 3, type: "T", semester: 5, abbreviation: "ML",
+    units: mkUnits("Machine Learning", [
+      { title: "Unit I — Foundations", topics: ["Supervised vs unsupervised", "Bias-variance", "Train/test split"] },
+      { title: "Unit II — Regression", topics: ["Linear regression", "Logistic regression", "Regularization"] },
+      { title: "Unit III — Classification", topics: ["Decision trees", "k-NN", "Naive Bayes", "SVM"] },
+      { title: "Unit IV — Unsupervised Learning", topics: ["k-Means", "Hierarchical clustering", "PCA"] },
+      { title: "Unit V — Neural Networks", topics: ["Perceptron", "Backpropagation", "Activation functions", "Intro to deep learning"] },
+    ]) },
+  { code: "22ITC10", name: "Computer Networks", credits: 3, type: "T", semester: 5, abbreviation: "CN",
+    units: mkUnits("Computer Networks", [
+      { title: "Unit I — Introduction", topics: ["OSI & TCP/IP layers", "Topologies", "Transmission media"] },
+      { title: "Unit II — Data Link Layer", topics: ["Framing", "Error detection", "MAC protocols", "Ethernet"] },
+      { title: "Unit III — Network Layer", topics: ["IP addressing", "Subnetting", "Routing algorithms"] },
+      { title: "Unit IV — Transport Layer", topics: ["TCP / UDP", "Flow control", "Congestion control"] },
+      { title: "Unit V — Application Layer", topics: ["HTTP / HTTPS", "DNS", "SMTP", "Network security"] },
+    ]) },
+  { code: "22ITC12", name: "Formal Languages and Automata Theory", credits: 3, type: "T", semester: 5, abbreviation: "FLAT",
+    units: mkUnits("Formal Languages and Automata Theory") },
+  { code: "22CSC21", name: "Software Engineering", credits: 3, type: "T", semester: 5, abbreviation: "SE",
+    units: mkUnits("Software Engineering") },
+  { code: "22ITC09", name: "Enterprise Application Development Lab", credits: 1, type: "P", semester: 5, abbreviation: "EAD Lab",
+    units: mkUnits("EAD Lab") },
+  { code: "22ITC11", name: "Computer Networks Lab", credits: 1, type: "P", semester: 5, abbreviation: "CN Lab",
+    units: mkUnits("CN Lab") },
+  { code: "22CAC18", name: "Machine Learning Lab", credits: 1, type: "P", semester: 5, abbreviation: "ML Lab",
+    units: mkUnits("ML Lab") },
 ];
 
 const STAGES = [
@@ -238,8 +273,8 @@ const AiSyllabusUpload = ({ onApprove }) => {
           {!processing && extracted.length > 0 && (
             <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
               <BookOpen className="w-3.5 h-3.5" />
-              {extracted.filter(r => r._keep).length} of {extracted.length} subjects selected for import.
-              Once approved, background AI generation (notes, flashcards, MCQs, audio) will be queued.
+              {extracted.filter(r => r._keep).length} of {extracted.length} subjects selected for import — 
+              each with 5 syllabus units extracted (drives the student AI Zone: flashcards, notes, MCQs, audio).
             </div>
           )}
 
