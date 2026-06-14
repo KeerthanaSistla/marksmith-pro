@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, ChevronDown, Pencil, Trash2, BookOpen, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AiSyllabusUpload from "./AiSyllabusUpload";
+import { setSyllabusUnitsBulk } from "@/lib/dataStore";
 
 // Full IT department curriculum (Semesters 1-8)
 // Note: All projects, internships, mini-projects, seminars are treated as Practical (P).
@@ -370,6 +371,13 @@ const SubjectsTab = ({ departmentId }) => {
   );
 
   const handleAiImport = (newSubjects) => {
+    // Persist syllabus units (drives student AI Zone) keyed by subject code
+    const unitsMap = {};
+    for (const s of newSubjects) {
+      if (s.units && s.units.length) unitsMap[s.code] = s.units;
+    }
+    if (Object.keys(unitsMap).length) setSyllabusUnitsBulk(unitsMap);
+
     setSemesters((prev) =>
       prev.map((sem) => {
         const additions = newSubjects
