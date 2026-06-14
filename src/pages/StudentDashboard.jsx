@@ -29,8 +29,8 @@ import {
   Brain,
   LogOut,
 } from "lucide-react";
-import StudentAnalytics from "@/components/student/StudentAnalytics";
-import StudentRiskAssessment from "@/components/student/RiskAssessment";
+import MarksInsights from "@/components/student/MarksInsights";
+import AiZone from "@/components/student/AiZone";
 import { buildStudentSemesterData, getDefaultStudentId, getStudent, getSection, getBatch } from "@/lib/dataStore";
 
 const gradePoints = { S: 10, A: 9, B: 8, C: 7, D: 6, F: 0 };
@@ -179,23 +179,23 @@ const StudentDashboard = () => {
       </header>
 
       <main className="container mx-auto px-6 py-8 space-y-8">
-        <Tabs defaultValue="academics" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-12 mb-6">
-            <TabsTrigger value="academics" className="text-base">
+        <Tabs defaultValue="marks" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 h-12 mb-6">
+            <TabsTrigger value="marks" className="text-base">
               <BookOpen className="w-4 h-4 mr-2" />
-              Academics
+              Marks
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="text-base">
-              <Activity className="w-4 h-4 mr-2" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="risk" className="text-base">
+            <TabsTrigger value="ai" className="text-base">
               <Brain className="w-4 h-4 mr-2" />
-              Risk & Predictions
+              AI Zone
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="academics" className="space-y-8">
+          <TabsContent value="marks" className="space-y-8">
+        {/* Personal status + predictions + weak units */}
+        <MarksInsights semesterData={mockSemesterData} grades={grades} />
+
+
         {/* Semester Selector + GPA Summary */}
         <div className="flex flex-col md:flex-row gap-6">
           {/* Semester Selector */}
@@ -500,20 +500,8 @@ const StudentDashboard = () => {
         </Card>
           </TabsContent>
 
-          <TabsContent value="analytics">
-            <StudentAnalytics
-              semesterData={mockSemesterData}
-              grades={grades}
-              calculateTheoryCIE={calculateTheoryCIE}
-              calculateLabCIE={calculateLabCIE}
-            />
-          </TabsContent>
-
-          <TabsContent value="risk">
-            <StudentRiskAssessment
-              semesterData={mockSemesterData}
-              grades={grades}
-            />
+          <TabsContent value="ai">
+            <AiZone />
           </TabsContent>
         </Tabs>
       </main>
