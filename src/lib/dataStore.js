@@ -371,7 +371,7 @@ function buildSeedStore() {
     }
   }
 
-  return { department, batches, sections, students, faculty: FACULTY, subjects: SUBJECTS, assignments, marks };
+  return { department, batches, sections, students, faculty: FACULTY, subjects: SUBJECTS, assignments, marks, syllabusUnits: {} };
 }
 
 // ─── Persistence ────────────────────────────────────────────────────────────
