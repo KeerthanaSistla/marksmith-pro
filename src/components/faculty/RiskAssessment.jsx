@@ -2,11 +2,11 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertTriangle, Shield, Users, TrendingDown, Eye, ChevronRight, Activity } from "lucide-react";
+import { AlertTriangle, Shield, Users, TrendingDown, Eye, ChevronRight, Activity, BarChart3 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, RadarChart, Radar, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis,
+  PolarAngleAxis, PolarRadiusAxis, LineChart, Line,
 } from "recharts";
 import {
   computeRiskScores, CATEGORIES, CATEGORY_ORDER, predictPerformance,
@@ -49,6 +49,30 @@ const RiskAssessment = ({ facultyId = DEFAULT_FACULTY_ID }) => {
     passRate: s.passRate,
     fullName: s.name,
   }));
+
+  // Predicted-grade distribution across the whole class (from CIE)
+  const gradeDist = useMemo(() => {
+    const buckets = { S: 0, A: 0, B: 0, C: 0, D: 0, F: 0 };
+    allStudents.forEach((st) => {
+      Object.values(st.subjectCIEs).forEach(({ pct }) => {
+        const predicted = pct * 0.85 + 15;
+        if (predicted >= 90) buckets.S++;
+        else if (predicted >= 80) buckets.A++;
+        else if (predicted >= 70) buckets.B++;
+        else if (predicted >= 60) buckets.C++;
+        else if (predicted >= 50) buckets.D++;
+        else buckets.F++;
+      });
+    });
+    const colors = { S: "#16A34A", A: "#2563EB", B: "#7C3AED", C: "#F59E0B", D: "#94A3B8", F: "#DC2626" };
+    return Object.entries(buckets).map(([grade, count]) => ({ grade, count, color: colors[grade] }));
+  }, [allStudents]);
+
+  // Class average CIE % across taught subjects (sorted by code)
+  const subjectAvgData = subjectStats
+    .slice()
+    .sort((a, b) => a.code.localeCompare(b.code))
+    .map((s) => ({ name: s.code, avg: s.classMeanPct, fullName: s.name }));
 
   const safePct = summary.total ? Math.round((summary.safe / summary.total) * 100) : 0;
   const atRiskPct = summary.total ? Math.round((summary.atRisk / summary.total) * 100) : 0;
@@ -161,7 +185,63 @@ const RiskAssessment = ({ facultyId = DEFAULT_FACULTY_ID }) => {
         </Card>
       </div>
 
-      {/* Student roster with category filter */}
+      {/* Grade distribution (predicted) + class average by subject */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card className="shadow-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BarChart3 className="w-5 h-5" />
+              Predicted Grade Distribution
+            </CardTitle>
+            <CardDescription>From current CIE across all taught subjects</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={gradeDist}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="grade" />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {gradeDist.map((d) => <Cell key={d.grade} fill={d.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Class Average CIE — by subject
+            </CardTitle>
+            <CardDescription>Average CIE % per subject (0-100)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={subjectAvgData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="name" fontSize={10} />
+                <YAxis domain={[0, 100]} fontSize={11} />
+                <Tooltip content={({ active, payload }) => {
+                  if (!active || !payload?.length) return null;
+                  const d = payload[0].payload;
+                  return (
+                    <div className="bg-background border rounded-lg p-2 text-xs shadow-lg">
+                      <p className="font-semibold">{d.fullName}</p>
+                      <p>Class avg: {d.avg}%</p>
+                    </div>
+                  );
+                }} />
+                <Line type="monotone" dataKey="avg" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+
       <Card className="shadow-md">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-4 flex-wrap">

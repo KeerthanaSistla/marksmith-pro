@@ -371,7 +371,7 @@ function buildSeedStore() {
     }
   }
 
-  return { department, batches, sections, students, faculty: FACULTY, subjects: SUBJECTS, assignments, marks };
+  return { department, batches, sections, students, faculty: FACULTY, subjects: SUBJECTS, assignments, marks, syllabusUnits: {} };
 }
 
 // ─── Persistence ────────────────────────────────────────────────────────────
@@ -632,3 +632,38 @@ export function getDefaultStudentId() {
   const s = getStore().students.find((st) => st.sectionId === "B-2023-IT1");
   return s?.id;
 }
+
+// ─── Syllabus units (per subject code) ──────────────────────────────────────
+// Default 5-unit template generator — used when admin hasn't uploaded
+// detailed units for a subject. The AI Syllabus Upload flow can overwrite
+// these via setSyllabusUnitsBulk().
+export function generateDefaultUnits(subject) {
+  const base = subject?.name || "Course";
+  return [
+    { title: `Unit I — Foundations of ${base}`,
+      topics: ["Introduction and motivation", "Core terminology", "Historical context", "Scope and applications"] },
+    { title: `Unit II — Core Concepts`,
+      topics: ["Theoretical principles", "Mathematical/logical foundation", "Standard models", "Worked examples"] },
+    { title: `Unit III — Techniques & Methods`,
+      topics: ["Algorithms / procedures", "Design patterns", "Implementation considerations", "Trade-offs"] },
+    { title: `Unit IV — Advanced Topics`,
+      topics: ["Recent developments", "Optimization & scaling", "Tooling & frameworks", "Case studies"] },
+    { title: `Unit V — Applications & Practice`,
+      topics: ["Industry use-cases", "Project workflows", "Best practices", "Open problems & future directions"] },
+  ];
+}
+
+export function getSyllabusUnits(subjectCode) {
+  const store = getStore();
+  const stored = store.syllabusUnits?.[subjectCode];
+  if (stored && stored.length) return stored;
+  const sub = store.subjects.find((s) => s.code === subjectCode);
+  return generateDefaultUnits(sub);
+}
+
+export function setSyllabusUnitsBulk(map) {
+  const store = getStore();
+  store.syllabusUnits = { ...(store.syllabusUnits || {}), ...map };
+  saveStore(store);
+}
+
