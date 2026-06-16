@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import StudentDashboard from "./pages/StudentDashboard";
 import StudentSettings from "./pages/StudentSettings";
 import FacultyDashboard from "./pages/FacultyDashboard";
+import FacultySubjectPage from "./pages/FacultySubjectPage";
 import FacultySettings from "./pages/FacultySettings";
 import AdminDashboard from "./pages/AdminDashboard";
 import DepartmentPage from "./pages/DepartmentPage";
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/student" element={<StudentDashboard />} />
           <Route path="/student/settings" element={<StudentSettings />} />
           <Route path="/faculty" element={<FacultyDashboard />} />
+          <Route path="/faculty/subject/:assignmentId" element={<FacultySubjectPage />} />
           <Route path="/faculty/settings" element={<FacultySettings />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/department/:id" element={<DepartmentPage />} />
