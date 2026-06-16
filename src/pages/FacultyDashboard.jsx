@@ -169,9 +169,7 @@ const FacultyDashboard = () => {
                         {displayedAssignments.map((a) => (
                           <Card
                             key={a.id}
-                            className={`cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 ${
-                              selectedAssignmentId === a.id ? "border-2 border-primary shadow-md" : "border-2 border-transparent"
-                            }`}
+                            className="cursor-pointer transition-all hover:shadow-lg hover:border-primary/50 border-2 border-transparent"
                             onClick={() => navigate(`/faculty/subject/${a.id}`)}
                           >
                             <CardHeader className="pb-4">
