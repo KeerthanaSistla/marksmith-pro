@@ -69,22 +69,40 @@ const FacultyDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-gradient-to-r from-primary via-primary/80 to-accent text-primary-foreground shadow-lg">
-        <div className="container mx-auto px-4 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6" />
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold">Faculty Portal</h1>
-                <p className="text-sm opacity-80">{me?.name} • {me?.designation}</p>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold truncate">Faculty Portal</h1>
+                <p className="text-xs sm:text-sm opacity-80 truncate">{me?.name} • {me?.designation}</p>
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/faculty/settings")}
+                className="sm:hidden text-primary-foreground hover:bg-white/10 border border-white/20"
+                aria-label="Settings"
+              >
+                <Settings className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="sm:hidden text-primary-foreground hover:bg-white/10 border border-white/20"
+                aria-label="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
               <Button
                 variant="ghost"
                 onClick={() => navigate("/faculty/settings")}
-                className="gap-2 text-primary-foreground hover:bg-white/10 border border-white/20"
+                className="hidden sm:inline-flex gap-2 text-primary-foreground hover:bg-white/10 border border-white/20"
               >
                 <Settings className="w-4 h-4" />
                 Settings
@@ -92,7 +110,7 @@ const FacultyDashboard = () => {
               <Button
                 variant="ghost"
                 onClick={handleLogout}
-                className="gap-2 text-primary-foreground hover:bg-white/10 border border-white/20"
+                className="hidden sm:inline-flex gap-2 text-primary-foreground hover:bg-white/10 border border-white/20"
               >
                 <LogOut className="w-4 h-4" />
                 Logout
@@ -102,14 +120,16 @@ const FacultyDashboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-10">
+      <main className="container mx-auto px-3 sm:px-6 py-6 sm:py-10">
         <Tabs defaultValue="subjects" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-12 mb-8">
-            <TabsTrigger value="subjects" className="text-base">
-              <BookOpen className="w-4 h-4 mr-2" /> Subjects & Marks
+          <TabsList className="grid w-full grid-cols-2 h-auto sm:h-12 mb-6 sm:mb-8">
+            <TabsTrigger value="subjects" className="text-xs sm:text-base py-2 px-1 sm:px-3">
+              <BookOpen className="w-4 h-4 mr-1 sm:mr-2 shrink-0" />
+              <span className="truncate">Subjects & Marks</span>
             </TabsTrigger>
-            <TabsTrigger value="risk" className="text-base">
-              <Brain className="w-4 h-4 mr-2" /> Performance & Risk
+            <TabsTrigger value="risk" className="text-xs sm:text-base py-2 px-1 sm:px-3">
+              <Brain className="w-4 h-4 mr-1 sm:mr-2 shrink-0" />
+              <span className="truncate">Performance & Risk</span>
             </TabsTrigger>
           </TabsList>
 
@@ -156,7 +176,7 @@ const FacultyDashboard = () => {
                         No subjects taught in {selectedAcademicYear}.
                       </p>
                     ) : (
-                      <div className="grid md:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         {displayedAssignments.map((a) => (
                           <Card
                             key={a.id}
