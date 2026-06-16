@@ -250,29 +250,29 @@ const FacultySubjectPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-gradient-to-r from-primary via-primary/80 to-accent text-primary-foreground shadow-lg">
-        <div className="container mx-auto px-4 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate("/faculty")} className="text-primary-foreground hover:bg-white/10">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/faculty")} className="text-primary-foreground hover:bg-white/10 shrink-0">
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <FileSpreadsheet className="w-6 h-6" />
-                {subject.code} — {subject.name}
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-2xl font-bold flex items-center gap-2 truncate">
+                <FileSpreadsheet className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
+                <span className="truncate">{subject.code} — {subject.name}</span>
               </h1>
-              <p className="text-sm opacity-80">
+              <p className="text-[11px] sm:text-sm opacity-80 truncate">
                 {section?.name} • {batch?.name} • Sem {assignment.semester} •{" "}
                 <Badge variant="secondary" className="ml-1">{isLab ? "Lab" : "Theory"}</Badge>
               </p>
             </div>
           </div>
-          <Badge className="text-sm bg-white/20 text-primary-foreground">
-            {students.length} students
+          <Badge className="text-xs sm:text-sm bg-white/20 text-primary-foreground shrink-0 whitespace-nowrap">
+            {students.length} <span className="hidden sm:inline">students</span>
           </Badge>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-6">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6">
         {/* Action bar */}
         <Card>
           <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
