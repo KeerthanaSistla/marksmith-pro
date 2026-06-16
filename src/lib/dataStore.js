@@ -478,6 +478,41 @@ export function setMarks(assignmentId, studentId, patch) {
   saveStore(store);
 }
 
+// Overwrite the full marks record for many students on one assignment.
+// `perStudent` is { [studentId]: { slipTests?, assignments?, classTests?, attendance?, weeklyCIE?, internalTests? } }
+export function setMarksBulk(assignmentId, perStudent) {
+  const store = getStore();
+  for (const [sid, patch] of Object.entries(perStudent)) {
+    const key = `${assignmentId}|${sid}`;
+    const clean = {};
+    for (const [k, v] of Object.entries(patch)) {
+      if (Array.isArray(v)) clean[k] = v.map((x) => (x === "" || x == null || isNaN(Number(x)) ? 0 : Number(x)));
+      else clean[k] = v === "" || v == null || isNaN(Number(v)) ? 0 : Number(v);
+    }
+    store.marks[key] = { ...(store.marks[key] || {}), ...clean };
+  }
+  saveStore(store);
+}
+
+// Variable number of lab weeks per assignment
+export function getLabWeekCount(assignmentId) {
+  const store = getStore();
+  const stored = store.labWeekCounts?.[assignmentId];
+  if (stored) return stored;
+  let max = 3;
+  for (const key of Object.keys(store.marks)) {
+    if (!key.startsWith(`${assignmentId}|`)) continue;
+    const len = store.marks[key]?.weeklyCIE?.length || 0;
+    if (len > max) max = len;
+  }
+  return max;
+}
+export function setLabWeekCount(assignmentId, count) {
+  const store = getStore();
+  store.labWeekCounts = { ...(store.labWeekCounts || {}), [assignmentId]: count };
+  saveStore(store);
+}
+
 // Update a single assessment (e.g., classtest1) for many students at once.
 // component examples: 'sliptest1' 'assignment2' 'classtest1' 'attendance'
 //                     'weeklycie1' 'internaltest2'
