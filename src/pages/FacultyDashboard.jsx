@@ -176,7 +176,7 @@ const FacultyDashboard = () => {
                         No subjects taught in {selectedAcademicYear}.
                       </p>
                     ) : (
-                      <div className="grid md:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                         {displayedAssignments.map((a) => (
                           <Card
                             key={a.id}
