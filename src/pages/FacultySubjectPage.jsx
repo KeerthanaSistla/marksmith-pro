@@ -275,19 +275,19 @@ const FacultySubjectPage = () => {
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 space-y-4 sm:space-y-6">
         {/* Action bar */}
         <Card>
-          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={handleSaveAll} className="gap-2">
+          <CardContent className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 p-3 sm:p-4">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+              <Button onClick={handleSaveAll} className="gap-2" size="sm">
                 <Save className="w-4 h-4" /> Save All
               </Button>
-              <Button variant="outline" onClick={handleDownload} className="gap-2">
-                <Download className="w-4 h-4" /> Download Marks
+              <Button variant="outline" onClick={handleDownload} className="gap-2" size="sm">
+                <Download className="w-4 h-4" /> <span className="truncate">Download</span>
               </Button>
-              <Button variant="outline" onClick={handleDownloadSample} className="gap-2">
-                <FileSpreadsheet className="w-4 h-4" /> Sample Template
+              <Button variant="outline" onClick={handleDownloadSample} className="gap-2" size="sm">
+                <FileSpreadsheet className="w-4 h-4" /> <span className="truncate">Template</span>
               </Button>
-              <Button variant="outline" onClick={() => fileRef.current?.click()} className="gap-2">
-                <Upload className="w-4 h-4" /> Bulk Upload
+              <Button variant="outline" onClick={() => fileRef.current?.click()} className="gap-2" size="sm">
+                <Upload className="w-4 h-4" /> <span className="truncate">Bulk Upload</span>
               </Button>
               <input
                 ref={fileRef}
@@ -298,14 +298,16 @@ const FacultySubjectPage = () => {
               />
             </div>
             {isLab && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-between sm:justify-end">
                 <span className="text-sm text-muted-foreground">Weeks: {weekCount}</span>
-                <Button variant="outline" size="sm" onClick={removeWeek} disabled={weekCount <= 1}>
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={addWeek} className="gap-1">
-                  <Plus className="w-3 h-3" /> Add Week
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={removeWeek} disabled={weekCount <= 1}>
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={addWeek} className="gap-1">
+                    <Plus className="w-3 h-3" /> Add Week
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
