@@ -68,121 +68,12 @@ const FacultyDashboard = () => {
     return map;
   }, [myAssignments]);
 
-  const [selectedAssignmentId, setSelectedAssignmentId] = useState(myAssignments[0]?.id || "");
-  const selected = myAssignments.find((a) => a.id === selectedAssignmentId);
-
-  const [selectedTest, setSelectedTest] = useState("");
-  const [bulkMarks, setBulkMarks] = useState({});
-  const [, forceTick] = useState(0);
-
   const handleLogout = () => {
     localStorage.removeItem("userRole");
     localStorage.removeItem("userEmail");
     navigate("/");
   };
 
-  const isTheory = selected?.subject?.type === "T";
-
-  const getTestOptions = () => {
-    if (!selected) return [];
-    if (isTheory) {
-      return [
-        { value: "sliptest1", label: "Slip Test 1 (Max 5)", max: 5 },
-        { value: "sliptest2", label: "Slip Test 2 (Max 5)", max: 5 },
-        { value: "sliptest3", label: "Slip Test 3 (Max 5)", max: 5 },
-        { value: "assignment1", label: "Assignment 1 (Max 10)", max: 10 },
-        { value: "assignment2", label: "Assignment 2 (Max 10)", max: 10 },
-        { value: "classtest1", label: "Class Test 1 (Max 20)", max: 20 },
-        { value: "classtest2", label: "Class Test 2 (Max 20)", max: 20 },
-        { value: "attendance", label: "Attendance (Max 5)", max: 5 },
-      ];
-    }
-    return [
-      { value: "weeklycie1", label: "Weekly CIE 1 (Max 30)", max: 30 },
-      { value: "weeklycie2", label: "Weekly CIE 2 (Max 30)", max: 30 },
-      { value: "weeklycie3", label: "Weekly CIE 3 (Max 30)", max: 30 },
-      { value: "internaltest1", label: "Internal Test 1 (Max 20)", max: 20 },
-      { value: "internaltest2", label: "Internal Test 2 (Max 20)", max: 20 },
-    ];
-  };
-
-  const classStudents = useMemo(() => {
-    if (!selected) return [];
-    return selected.studentIds
-      .map((sid) => store.students.find((st) => st.id === sid))
-      .filter(Boolean);
-  }, [selected, store]);
-
-  const handleBulkMarkChange = (sid, val) => {
-    setBulkMarks((prev) => ({ ...prev, [sid]: val }));
-  };
-
-  const handleSubmitBulkMarks = () => {
-    if (!selectedTest || !selected) {
-      toast({ title: "Error", description: "Please select an assessment", variant: "destructive" });
-      return;
-    }
-    const filtered = Object.fromEntries(
-      Object.entries(bulkMarks).filter(([, v]) => v !== "" && v != null),
-    );
-    if (!Object.keys(filtered).length) {
-      toast({ title: "Nothing to submit", description: "Enter marks for at least one student", variant: "destructive" });
-      return;
-    }
-    updateAssessment(selected.id, selectedTest, filtered);
-    toast({
-      title: "Marks Saved",
-      description: `${selectedTest.toUpperCase()} updated for ${Object.keys(filtered).length} students`,
-    });
-    setBulkMarks({});
-    forceTick((n) => n + 1);
-  };
-
-  // ── Subject-wise view: show every student's CIE breakdown ──
-  const subjectWise = useMemo(() => {
-    if (!selected) return [];
-    return classStudents.map((st) => {
-      const m = store.marks[`${selected.id}|${st.id}`] || {};
-      if (isTheory) {
-        const c = computeTheoryCIE(m);
-        return {
-          ...st,
-          slipTest: c.slipTest,
-          assignment: c.assignment,
-          classTest: c.classTest,
-          attendance: c.attendance,
-          total: c.total,
-          max: CIE_MAX_THEORY,
-          slipTests: m.slipTests || [],
-          assignments: m.assignments || [],
-          classTests: m.classTests || [],
-        };
-      }
-      const c = computeLabCIE(m);
-      return {
-        ...st,
-        weeklyCIE: c.weeklyCIE,
-        internalTests: c.internalTests,
-        total: c.total,
-        max: CIE_MAX_LAB,
-        weeklies: m.weeklyCIE || [],
-        internals: m.internalTests || [],
-      };
-    });
-  }, [selected, classStudents, store, isTheory]);
-
-  // Adapter for analytics components that expect 'theory'/'lab' types
-  const analyticsSubjects = useMemo(() => {
-    return myAssignments.map((a) => ({
-      id: a.id,
-      courseCode: a.subject.code,
-      name: a.subject.name,
-      type: a.subject.type === "T" ? "theory" : "lab",
-      credits: a.subject.credits,
-      class: a.section?.name,
-      students: a.studentIds.length,
-    }));
-  }, [myAssignments]);
 
   return (
     <div className="min-h-screen bg-background">
