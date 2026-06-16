@@ -2,24 +2,15 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Users, BookOpen, Upload, Eye, Brain, LogOut } from "lucide-react";
+import { Settings, Users, BookOpen, Brain, LogOut } from "lucide-react";
 import RiskAssessment from "@/components/faculty/RiskAssessment";
 import { useToast } from "@/hooks/use-toast";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   getStore,
   getAssignmentsForFaculty,
-  updateAssessment,
-  computeTheoryCIE,
-  computeLabCIE,
-  CIE_MAX_THEORY,
-  CIE_MAX_LAB,
   DEFAULT_FACULTY_ID,
 } from "@/lib/dataStore";
 
