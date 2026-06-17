@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Building2, Plus, Search, LogOut, Lock } from "lucide-react";
@@ -211,9 +212,8 @@ const AdminDashboard = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="deptPassword">Department Password *</Label>
-              <Input
+              <PasswordInput
                 id="deptPassword"
-                type="password"
                 placeholder="Set a password for this department"
                 value={newDeptPassword}
                 onChange={(e) => setNewDeptPassword(e.target.value)}
@@ -243,9 +243,8 @@ const AdminDashboard = () => {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="accessPassword">Password</Label>
-              <Input
+              <PasswordInput
                 id="accessPassword"
-                type="password"
                 placeholder="Enter department password"
                 value={deptPassword}
                 onChange={(e) => setDeptPassword(e.target.value)}

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ArrowLeft, Settings, Users, BookOpen, GraduationCap, LogOut, Key, Pencil, Trash2 } from "lucide-react";
@@ -201,9 +202,8 @@ const DepartmentSettings = () => {
                 <form onSubmit={handleChangePassword} className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label htmlFor="currentPwd">Current Password</Label>
-                    <Input
+                    <PasswordInput
                       id="currentPwd"
-                      type="password"
                       value={passwordForm.currentPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                       required
@@ -211,9 +211,8 @@ const DepartmentSettings = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="newPwd">New Password</Label>
-                    <Input
+                    <PasswordInput
                       id="newPwd"
-                      type="password"
                       value={passwordForm.newPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                       required
@@ -221,9 +220,8 @@ const DepartmentSettings = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirmPwd">Confirm New Password</Label>
-                    <Input
+                    <PasswordInput
                       id="confirmPwd"
-                      type="password"
                       value={passwordForm.confirmPassword}
                       onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                       required
