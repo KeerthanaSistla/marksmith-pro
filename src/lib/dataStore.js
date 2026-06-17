@@ -550,42 +550,130 @@ export function updateAssessment(assignmentId, component, valuesByStudentId) {
   saveStore(store);
 }
 
+// ─── Student-owned overrides & custom subjects ─────────────────────────────
+// Students can edit marks / set grades for past semesters and add their own
+// subjects (e.g. when faculty maintain marks outside the system). These are
+// kept per-student in `studentExtras` and merged into the dashboard view.
+//
+// Shape:
+//   studentExtras[studentId] = {
+//     overrides: { "<sem>|<code>": { marks?, grade? } },
+//     custom:    { "<sem>|<code>": { courseCode, name, type, credits, marks, grade } }
+//   }
+function getExtras(studentId) {
+  const store = getStore();
+  const all = store.studentExtras || {};
+  return all[studentId] || { overrides: {}, custom: {} };
+}
+function writeExtras(studentId, extras) {
+  const store = getStore();
+  store.studentExtras = { ...(store.studentExtras || {}), [studentId]: extras };
+  saveStore(store);
+}
+export function setStudentSubjectMarks(studentId, sem, courseCode, marks) {
+  const extras = getExtras(studentId);
+  const key = `${sem}|${courseCode}`;
+  if (extras.custom[key]) {
+    extras.custom = { ...extras.custom, [key]: { ...extras.custom[key], marks } };
+  } else {
+    extras.overrides = { ...extras.overrides, [key]: { ...(extras.overrides[key] || {}), marks } };
+  }
+  writeExtras(studentId, extras);
+}
+export function setStudentSubjectGrade(studentId, sem, courseCode, grade) {
+  const extras = getExtras(studentId);
+  const key = `${sem}|${courseCode}`;
+  if (extras.custom[key]) {
+    extras.custom = { ...extras.custom, [key]: { ...extras.custom[key], grade } };
+  } else {
+    extras.overrides = { ...extras.overrides, [key]: { ...(extras.overrides[key] || {}), grade } };
+  }
+  writeExtras(studentId, extras);
+}
+export function addStudentCustomSubject(studentId, sem, { courseCode, name, type, credits }) {
+  const extras = getExtras(studentId);
+  const key = `${sem}|${courseCode}`;
+  const isTheory = type === "theory" || type === "T";
+  extras.custom = {
+    ...extras.custom,
+    [key]: {
+      courseCode,
+      name,
+      type: isTheory ? "theory" : "lab",
+      credits: Number(credits) || 3,
+      marks: isTheory
+        ? { slipTests: [0, 0, 0], assignments: [0, 0], classTests: [0, 0], attendance: 0 }
+        : { weeklyCIE: [0, 0, 0], internalTests: [0, 0] },
+      grade: null,
+    },
+  };
+  writeExtras(studentId, extras);
+}
+export function removeStudentCustomSubject(studentId, sem, courseCode) {
+  const extras = getExtras(studentId);
+  const key = `${sem}|${courseCode}`;
+  if (!extras.custom[key]) return;
+  const next = { ...extras.custom };
+  delete next[key];
+  extras.custom = next;
+  writeExtras(studentId, extras);
+}
+
 // Build the semesterData shape expected by Student dashboard / analytics
-// for a given studentId.
+// for a given studentId. Includes student-owned overrides + custom subjects.
 export function buildStudentSemesterData(studentId) {
   const store = getStore();
+  const extras = getExtras(studentId);
   const result = {};
   for (let sem = 1; sem <= 8; sem++) {
     const myAssignments = store.assignments.filter(
       (a) => a.studentIds.includes(studentId) && a.semester === sem,
     );
-    result[sem] = {
-      subjects: myAssignments.map((a) => {
-        const sub = store.subjects.find((s) => s.code === a.subjectCode);
-        const m = store.marks[`${a.id}|${studentId}`] || {};
-        const isTheory = sub.type === "T";
-        return {
-          courseCode: sub.code,
-          name: sub.name,
-          type: isTheory ? "theory" : "lab",
-          credits: sub.credits,
-          marks: isTheory
-            ? {
-                slipTests: m.slipTests || [0, 0, 0],
-                assignments: m.assignments || [0, 0],
-                classTests: m.classTests || [0, 0],
-                attendance: m.attendance || 0,
-              }
-            : {
-                weeklyCIE: m.weeklyCIE || [0, 0, 0],
-                internalTests: m.internalTests || [0, 0],
-              },
-          grade: null,
-          assignmentId: a.id,
-          facultyId: a.facultyId,
-        };
-      }),
-    };
+    const subjects = myAssignments.map((a) => {
+      const sub = store.subjects.find((s) => s.code === a.subjectCode);
+      const m = store.marks[`${a.id}|${studentId}`] || {};
+      const isTheory = sub.type === "T";
+      const defaults = isTheory
+        ? {
+            slipTests: m.slipTests || [0, 0, 0],
+            assignments: m.assignments || [0, 0],
+            classTests: m.classTests || [0, 0],
+            attendance: m.attendance || 0,
+          }
+        : {
+            weeklyCIE: m.weeklyCIE || [0, 0, 0],
+            internalTests: m.internalTests || [0, 0],
+          };
+      const override = extras.overrides[`${sem}|${sub.code}`] || {};
+      return {
+        courseCode: sub.code,
+        name: sub.name,
+        type: isTheory ? "theory" : "lab",
+        credits: sub.credits,
+        marks: override.marks || defaults,
+        grade: override.grade || null,
+        assignmentId: a.id,
+        facultyId: a.facultyId,
+        isCustom: false,
+      };
+    });
+
+    // Append student-added custom subjects for this semester
+    for (const [key, c] of Object.entries(extras.custom)) {
+      const [semStr] = key.split("|");
+      if (parseInt(semStr, 10) !== sem) continue;
+      subjects.push({
+        courseCode: c.courseCode,
+        name: c.name,
+        type: c.type,
+        credits: c.credits,
+        marks: c.marks,
+        grade: c.grade || null,
+        isCustom: true,
+      });
+    }
+
+    result[sem] = { subjects };
   }
   return result;
 }
