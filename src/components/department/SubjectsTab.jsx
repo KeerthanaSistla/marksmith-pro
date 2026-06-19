@@ -204,6 +204,7 @@ const SubjectsTab = ({ departmentId }) => {
       abbreviation: subjectForm.abbreviation.trim() || subjectForm.code.trim(),
       credits: Number(subjectForm.credits),
       type: subjectForm.type,
+      category: subjectForm.category || "core",
       semester: selectedSemester.number,
     };
     setSemesters((prev) =>
@@ -230,6 +231,7 @@ const SubjectsTab = ({ departmentId }) => {
                       abbreviation: subjectForm.abbreviation.trim() || subjectForm.code.trim(),
                       credits: Number(subjectForm.credits),
                       type: subjectForm.type,
+                      category: subjectForm.category || "core",
                     }
                   : sub,
               ),
@@ -264,6 +266,7 @@ const SubjectsTab = ({ departmentId }) => {
       abbreviation: subject.abbreviation,
       credits: String(subject.credits ?? ""),
       type: subject.type || "T",
+      category: subject.category || "core",
     });
     setShowEditSubjectDialog(true);
   };
