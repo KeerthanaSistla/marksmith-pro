@@ -335,6 +335,7 @@ const FacultySubjectPage = () => {
               <p className="text-[11px] sm:text-sm opacity-80 truncate">
                 {section?.name} • {batch?.name} • Sem {assignment.semester} •{" "}
                 <Badge variant="secondary" className="ml-1">{isLab ? "Lab" : "Theory"}</Badge>
+                {isElective && <Badge variant="outline" className="ml-1 bg-white/10 border-white/40 text-primary-foreground">Elective</Badge>}
               </p>
             </div>
           </div>
@@ -360,6 +361,9 @@ const FacultySubjectPage = () => {
               </Button>
               <Button variant="outline" onClick={() => fileRef.current?.click()} className="gap-2" size="sm">
                 <Upload className="w-4 h-4" /> <span className="truncate">Bulk Upload</span>
+              </Button>
+              <Button variant="outline" onClick={openRoster} className="gap-2" size="sm">
+                <Users className="w-4 h-4" /> <span className="truncate">Manage Students</span>
               </Button>
               <input
                 ref={fileRef}
