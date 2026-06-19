@@ -5,7 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, Upload, Plus, Save, FileSpreadsheet, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Download, Upload, Plus, Save, FileSpreadsheet, Trash2, Users, X, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   getStore,
@@ -16,6 +20,9 @@ import {
   computeLabCIE,
   CIE_MAX_THEORY,
   CIE_MAX_LAB,
+  setAssignmentStudents,
+  getStudentsInBatch,
+  addManualStudent,
 } from "@/lib/dataStore";
 
 const THEORY_COLS = [
