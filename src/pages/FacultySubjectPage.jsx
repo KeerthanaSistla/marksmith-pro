@@ -60,15 +60,80 @@ const FacultySubjectPage = () => {
   const section = store.sections.find((s) => s.id === assignment.sectionId);
   const batch = store.batches.find((b) => b.id === assignment.batchId);
   const isLab = subject.type === "P";
+  const isElective = (subject.category || "core") === "elective";
 
+  // Local roster state — editable via "Manage Students" dialog
+  const [studentIds, setStudentIds] = useState(() => [...assignment.studentIds]);
   const students = useMemo(
     () =>
-      assignment.studentIds
+      studentIds
         .map((sid) => store.students.find((st) => st.id === sid))
         .filter(Boolean)
         .sort((a, b) => a.rollNumber.localeCompare(b.rollNumber)),
-    [assignment, store],
+    [studentIds, store],
   );
+
+  // Manage Students dialog state
+  const [rosterOpen, setRosterOpen] = useState(false);
+  const [rosterDraft, setRosterDraft] = useState(studentIds);
+  const [rosterSearch, setRosterSearch] = useState("");
+  const [manualRoll, setManualRoll] = useState("");
+  const [manualName, setManualName] = useState("");
+  const batchCandidates = useMemo(
+    () => (batch ? getStudentsInBatch(batch.id).sort((a, b) => a.rollNumber.localeCompare(b.rollNumber)) : []),
+    [batch],
+  );
+  const filteredCandidates = useMemo(() => {
+    const q = rosterSearch.trim().toLowerCase();
+    if (!q) return batchCandidates;
+    return batchCandidates.filter(
+      (s) => s.rollNumber.toLowerCase().includes(q) || s.name.toLowerCase().includes(q),
+    );
+  }, [batchCandidates, rosterSearch]);
+
+  const openRoster = () => {
+    setRosterDraft([...studentIds]);
+    setRosterSearch("");
+    setManualRoll("");
+    setManualName("");
+    setRosterOpen(true);
+  };
+  const toggleDraft = (sid) => {
+    setRosterDraft((prev) => (prev.includes(sid) ? prev.filter((x) => x !== sid) : [...prev, sid]));
+  };
+  const addManualToDraft = () => {
+    if (!manualRoll.trim()) return;
+    const id = addManualStudent({
+      rollNumber: manualRoll,
+      name: manualName || manualRoll,
+      batchId: assignment.batchId,
+      sectionId: assignment.sectionId,
+      sectionName: section?.name,
+    });
+    setRosterDraft((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setManualRoll("");
+    setManualName("");
+    toast({ title: "Added", description: "Student added to roster draft." });
+  };
+  const saveRoster = () => {
+    setAssignmentStudents(assignmentId, rosterDraft);
+    setStudentIds([...rosterDraft]);
+    // Initialize empty grid rows for newly added students
+    setGrid((g) => {
+      const ng = { ...g };
+      for (const sid of rosterDraft) {
+        if (!ng[sid]) {
+          ng[sid] = isLab
+            ? { internalTests: ["", ""], weeklyCIE: Array.from({ length: weekCount }, () => "") }
+            : { slipTests: ["", "", ""], assignments: ["", ""], classTests: ["", ""], attendance: "" };
+        }
+      }
+      return ng;
+    });
+    setRosterOpen(false);
+    toast({ title: "Roster updated", description: `${rosterDraft.length} students in this subject.` });
+  };
+
 
   const initialWeeks = useMemo(() => getLabWeekCount(assignmentId), [assignmentId]);
   const [weekCount, setWeekCount] = useState(isLab ? initialWeeks : 0);
