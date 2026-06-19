@@ -363,7 +363,17 @@ const SubjectsTab = ({ departmentId }) => {
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="T">T — Theory</SelectItem>
-            <SelectItem value="P">P — Practical</SelectItem>
+            <SelectItem value="P">P — Practical / Lab</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2 col-span-2">
+        <Label>Category *</Label>
+        <Select value={subjectForm.category} onValueChange={(v) => updateForm({ category: v })}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="core">Core — taught to whole class</SelectItem>
+            <SelectItem value="elective">Elective — only opted students</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -446,6 +456,7 @@ const SubjectsTab = ({ departmentId }) => {
                             <TableHead>Abbreviation</TableHead>
                             <TableHead className="text-center">Credits</TableHead>
                             <TableHead className="text-center">Type</TableHead>
+                            <TableHead className="text-center">Category</TableHead>
                             <TableHead className="text-center">Sem</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
@@ -460,6 +471,11 @@ const SubjectsTab = ({ departmentId }) => {
                               <TableCell className="text-center">
                                 <Badge variant={subject.type === "P" ? "secondary" : "default"}>
                                   {subject.type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge variant={(subject.category || "core") === "elective" ? "outline" : "secondary"}>
+                                  {(subject.category || "core") === "elective" ? "Elective" : "Core"}
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-center">{subject.semester}</TableCell>
