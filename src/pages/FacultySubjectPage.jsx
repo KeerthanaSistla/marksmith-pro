@@ -483,6 +483,124 @@ const FacultySubjectPage = () => {
           Edits are kept in this view until you click <strong>Save All</strong>. Bulk upload merges into the grid for review before saving.
         </p>
       </main>
+
+      {/* Manage Students dialog */}
+      <Dialog open={rosterOpen} onOpenChange={setRosterOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" /> Manage Students
+              {isElective && <Badge variant="outline">Elective</Badge>}
+            </DialogTitle>
+            <DialogDescription>
+              Add or remove students enrolled in <strong>{subject.code}</strong>. Useful for electives or
+              when the official roster differs from what you teach.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid sm:grid-cols-2 gap-4 flex-1 min-h-0">
+            {/* Selected list */}
+            <div className="flex flex-col min-h-0 border rounded-md">
+              <div className="p-2 border-b bg-muted/40 text-sm font-medium flex items-center justify-between">
+                <span>Selected ({rosterDraft.length})</span>
+                <Button variant="ghost" size="sm" onClick={() => setRosterDraft([])} className="h-7 text-xs">
+                  Clear
+                </Button>
+              </div>
+              <ScrollArea className="flex-1 max-h-[40vh]">
+                <div className="p-2 space-y-1">
+                  {rosterDraft.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-6">No students added yet.</p>
+                  )}
+                  {rosterDraft.map((sid) => {
+                    const st = store.students.find((x) => x.id === sid);
+                    if (!st) return null;
+                    return (
+                      <div key={sid} className="flex items-center justify-between text-xs p-1.5 rounded bg-muted/30">
+                        <div className="min-w-0">
+                          <div className="font-mono truncate">{st.rollNumber}</div>
+                          <div className="text-muted-foreground truncate">{st.name}</div>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => toggleDraft(sid)}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Candidates */}
+            <div className="flex flex-col min-h-0 border rounded-md">
+              <div className="p-2 border-b bg-muted/40 space-y-2">
+                <div className="relative">
+                  <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search roll no / name in batch"
+                    value={rosterSearch}
+                    onChange={(e) => setRosterSearch(e.target.value)}
+                    className="h-8 pl-7 text-xs"
+                  />
+                </div>
+              </div>
+              <ScrollArea className="flex-1 max-h-[40vh]">
+                <div className="p-2 space-y-1">
+                  {filteredCandidates.slice(0, 200).map((st) => {
+                    const checked = rosterDraft.includes(st.id);
+                    return (
+                      <label
+                        key={st.id}
+                        className="flex items-center gap-2 text-xs p-1.5 rounded hover:bg-muted/50 cursor-pointer"
+                      >
+                        <Checkbox checked={checked} onCheckedChange={() => toggleDraft(st.id)} />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-mono truncate">{st.rollNumber}</div>
+                          <div className="text-muted-foreground truncate">
+                            {st.name} {st.sectionName && <span className="opacity-60">• {st.sectionName}</span>}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                  {filteredCandidates.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-6">No matches.</p>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          {/* Manual add */}
+          <div className="border rounded-md p-3 space-y-2">
+            <Label className="text-xs font-semibold">Add manually (roll number not in batch)</Label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="Roll number"
+                value={manualRoll}
+                onChange={(e) => setManualRoll(e.target.value)}
+                className="h-8 text-xs sm:flex-1"
+              />
+              <Input
+                placeholder="Name"
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                className="h-8 text-xs sm:flex-1"
+              />
+              <Button onClick={addManualToDraft} size="sm" className="gap-1">
+                <Plus className="w-3 h-3" /> Add
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRosterOpen(false)}>Cancel</Button>
+            <Button onClick={saveRoster} className="gap-2">
+              <Save className="w-4 h-4" /> Save Roster
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
