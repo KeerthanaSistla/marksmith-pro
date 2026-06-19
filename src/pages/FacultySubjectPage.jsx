@@ -5,7 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, Upload, Plus, Save, FileSpreadsheet, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Download, Upload, Plus, Save, FileSpreadsheet, Trash2, Users, X, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   getStore,
@@ -16,6 +20,9 @@ import {
   computeLabCIE,
   CIE_MAX_THEORY,
   CIE_MAX_LAB,
+  setAssignmentStudents,
+  getStudentsInBatch,
+  addManualStudent,
 } from "@/lib/dataStore";
 
 const THEORY_COLS = [
@@ -53,15 +60,80 @@ const FacultySubjectPage = () => {
   const section = store.sections.find((s) => s.id === assignment.sectionId);
   const batch = store.batches.find((b) => b.id === assignment.batchId);
   const isLab = subject.type === "P";
+  const isElective = (subject.category || "core") === "elective";
 
+  // Local roster state — editable via "Manage Students" dialog
+  const [studentIds, setStudentIds] = useState(() => [...assignment.studentIds]);
   const students = useMemo(
     () =>
-      assignment.studentIds
+      studentIds
         .map((sid) => store.students.find((st) => st.id === sid))
         .filter(Boolean)
         .sort((a, b) => a.rollNumber.localeCompare(b.rollNumber)),
-    [assignment, store],
+    [studentIds, store],
   );
+
+  // Manage Students dialog state
+  const [rosterOpen, setRosterOpen] = useState(false);
+  const [rosterDraft, setRosterDraft] = useState(studentIds);
+  const [rosterSearch, setRosterSearch] = useState("");
+  const [manualRoll, setManualRoll] = useState("");
+  const [manualName, setManualName] = useState("");
+  const batchCandidates = useMemo(
+    () => (batch ? getStudentsInBatch(batch.id).sort((a, b) => a.rollNumber.localeCompare(b.rollNumber)) : []),
+    [batch],
+  );
+  const filteredCandidates = useMemo(() => {
+    const q = rosterSearch.trim().toLowerCase();
+    if (!q) return batchCandidates;
+    return batchCandidates.filter(
+      (s) => s.rollNumber.toLowerCase().includes(q) || s.name.toLowerCase().includes(q),
+    );
+  }, [batchCandidates, rosterSearch]);
+
+  const openRoster = () => {
+    setRosterDraft([...studentIds]);
+    setRosterSearch("");
+    setManualRoll("");
+    setManualName("");
+    setRosterOpen(true);
+  };
+  const toggleDraft = (sid) => {
+    setRosterDraft((prev) => (prev.includes(sid) ? prev.filter((x) => x !== sid) : [...prev, sid]));
+  };
+  const addManualToDraft = () => {
+    if (!manualRoll.trim()) return;
+    const id = addManualStudent({
+      rollNumber: manualRoll,
+      name: manualName || manualRoll,
+      batchId: assignment.batchId,
+      sectionId: assignment.sectionId,
+      sectionName: section?.name,
+    });
+    setRosterDraft((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    setManualRoll("");
+    setManualName("");
+    toast({ title: "Added", description: "Student added to roster draft." });
+  };
+  const saveRoster = () => {
+    setAssignmentStudents(assignmentId, rosterDraft);
+    setStudentIds([...rosterDraft]);
+    // Initialize empty grid rows for newly added students
+    setGrid((g) => {
+      const ng = { ...g };
+      for (const sid of rosterDraft) {
+        if (!ng[sid]) {
+          ng[sid] = isLab
+            ? { internalTests: ["", ""], weeklyCIE: Array.from({ length: weekCount }, () => "") }
+            : { slipTests: ["", "", ""], assignments: ["", ""], classTests: ["", ""], attendance: "" };
+        }
+      }
+      return ng;
+    });
+    setRosterOpen(false);
+    toast({ title: "Roster updated", description: `${rosterDraft.length} students in this subject.` });
+  };
+
 
   const initialWeeks = useMemo(() => getLabWeekCount(assignmentId), [assignmentId]);
   const [weekCount, setWeekCount] = useState(isLab ? initialWeeks : 0);
@@ -263,6 +335,7 @@ const FacultySubjectPage = () => {
               <p className="text-[11px] sm:text-sm opacity-80 truncate">
                 {section?.name} • {batch?.name} • Sem {assignment.semester} •{" "}
                 <Badge variant="secondary" className="ml-1">{isLab ? "Lab" : "Theory"}</Badge>
+                {isElective && <Badge variant="outline" className="ml-1 bg-white/10 border-white/40 text-primary-foreground">Elective</Badge>}
               </p>
             </div>
           </div>
@@ -288,6 +361,9 @@ const FacultySubjectPage = () => {
               </Button>
               <Button variant="outline" onClick={() => fileRef.current?.click()} className="gap-2" size="sm">
                 <Upload className="w-4 h-4" /> <span className="truncate">Bulk Upload</span>
+              </Button>
+              <Button variant="outline" onClick={openRoster} className="gap-2" size="sm">
+                <Users className="w-4 h-4" /> <span className="truncate">Manage Students</span>
               </Button>
               <input
                 ref={fileRef}
@@ -407,6 +483,124 @@ const FacultySubjectPage = () => {
           Edits are kept in this view until you click <strong>Save All</strong>. Bulk upload merges into the grid for review before saving.
         </p>
       </main>
+
+      {/* Manage Students dialog */}
+      <Dialog open={rosterOpen} onOpenChange={setRosterOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" /> Manage Students
+              {isElective && <Badge variant="outline">Elective</Badge>}
+            </DialogTitle>
+            <DialogDescription>
+              Add or remove students enrolled in <strong>{subject.code}</strong>. Useful for electives or
+              when the official roster differs from what you teach.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid sm:grid-cols-2 gap-4 flex-1 min-h-0">
+            {/* Selected list */}
+            <div className="flex flex-col min-h-0 border rounded-md">
+              <div className="p-2 border-b bg-muted/40 text-sm font-medium flex items-center justify-between">
+                <span>Selected ({rosterDraft.length})</span>
+                <Button variant="ghost" size="sm" onClick={() => setRosterDraft([])} className="h-7 text-xs">
+                  Clear
+                </Button>
+              </div>
+              <ScrollArea className="flex-1 max-h-[40vh]">
+                <div className="p-2 space-y-1">
+                  {rosterDraft.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-6">No students added yet.</p>
+                  )}
+                  {rosterDraft.map((sid) => {
+                    const st = store.students.find((x) => x.id === sid);
+                    if (!st) return null;
+                    return (
+                      <div key={sid} className="flex items-center justify-between text-xs p-1.5 rounded bg-muted/30">
+                        <div className="min-w-0">
+                          <div className="font-mono truncate">{st.rollNumber}</div>
+                          <div className="text-muted-foreground truncate">{st.name}</div>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => toggleDraft(sid)}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Candidates */}
+            <div className="flex flex-col min-h-0 border rounded-md">
+              <div className="p-2 border-b bg-muted/40 space-y-2">
+                <div className="relative">
+                  <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search roll no / name in batch"
+                    value={rosterSearch}
+                    onChange={(e) => setRosterSearch(e.target.value)}
+                    className="h-8 pl-7 text-xs"
+                  />
+                </div>
+              </div>
+              <ScrollArea className="flex-1 max-h-[40vh]">
+                <div className="p-2 space-y-1">
+                  {filteredCandidates.slice(0, 200).map((st) => {
+                    const checked = rosterDraft.includes(st.id);
+                    return (
+                      <label
+                        key={st.id}
+                        className="flex items-center gap-2 text-xs p-1.5 rounded hover:bg-muted/50 cursor-pointer"
+                      >
+                        <Checkbox checked={checked} onCheckedChange={() => toggleDraft(st.id)} />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-mono truncate">{st.rollNumber}</div>
+                          <div className="text-muted-foreground truncate">
+                            {st.name} {st.sectionName && <span className="opacity-60">• {st.sectionName}</span>}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                  {filteredCandidates.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-6">No matches.</p>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          {/* Manual add */}
+          <div className="border rounded-md p-3 space-y-2">
+            <Label className="text-xs font-semibold">Add manually (roll number not in batch)</Label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Input
+                placeholder="Roll number"
+                value={manualRoll}
+                onChange={(e) => setManualRoll(e.target.value)}
+                className="h-8 text-xs sm:flex-1"
+              />
+              <Input
+                placeholder="Name"
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                className="h-8 text-xs sm:flex-1"
+              />
+              <Button onClick={addManualToDraft} size="sm" className="gap-1">
+                <Plus className="w-3 h-3" /> Add
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRosterOpen(false)}>Cancel</Button>
+            <Button onClick={saveRoster} className="gap-2">
+              <Save className="w-4 h-4" /> Save Roster
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

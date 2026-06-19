@@ -494,6 +494,40 @@ export function setMarksBulk(assignmentId, perStudent) {
   saveStore(store);
 }
 
+// ─── Assignment roster management (handles electives) ─────────────────────
+// Faculty can add/remove students from their subject's roster directly. For
+// electives the subject is created normally and faculty just picks the opted
+// students from the batch (or adds them manually by roll + name).
+export function setAssignmentStudents(assignmentId, studentIds) {
+  const store = getStore();
+  const a = store.assignments.find((x) => x.id === assignmentId);
+  if (!a) return;
+  a.studentIds = Array.from(new Set(studentIds));
+  saveStore(store);
+}
+export function getStudentsInBatch(batchId) {
+  return getStore().students.filter((s) => s.batchId === batchId);
+}
+export function addManualStudent({ rollNumber, name, batchId, sectionId, sectionName }) {
+  const store = getStore();
+  const existing = store.students.find(
+    (s) => String(s.rollNumber).trim().toLowerCase() === String(rollNumber).trim().toLowerCase(),
+  );
+  if (existing) return existing.id;
+  const id = `manual-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  store.students.push({
+    id,
+    rollNumber: String(rollNumber).trim(),
+    name: String(name).trim() || rollNumber,
+    batchId: batchId || null,
+    sectionId: sectionId || null,
+    sectionName: sectionName || "External",
+    manual: true,
+  });
+  saveStore(store);
+  return id;
+}
+
 // Variable number of lab weeks per assignment
 export function getLabWeekCount(assignmentId) {
   const store = getStore();
