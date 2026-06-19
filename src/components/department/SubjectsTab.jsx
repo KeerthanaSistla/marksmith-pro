@@ -158,6 +158,7 @@ const emptySubjectForm = {
   abbreviation: "",
   credits: "",
   type: "T",
+  category: "core",
 };
 
 const SubjectsTab = ({ departmentId }) => {
