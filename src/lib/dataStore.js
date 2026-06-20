@@ -528,6 +528,45 @@ export function addManualStudent({ rollNumber, name, batchId, sectionId, section
   return id;
 }
 
+// Create a brand-new teaching assignment (used by faculty "Add Subject" flow).
+// `sectionId` may be null for elective rosters built from arbitrary students.
+export function addAssignment({
+  facultyId,
+  subjectCode,
+  sectionId = null,
+  batchId = null,
+  semester,
+  academicYear,
+  studentIds = [],
+  isElective = false,
+}) {
+  const store = getStore();
+  const id = `A-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const assignment = {
+    id,
+    facultyId,
+    subjectCode,
+    sectionId,
+    batchId,
+    semester,
+    academicYear,
+    studentIds: Array.from(new Set(studentIds)),
+    isElective,
+  };
+  store.assignments.push(assignment);
+  saveStore(store);
+  return assignment;
+}
+
+// Find a student by roll number (case-insensitive, whitespace-tolerant).
+export function findStudentByRoll(rollNumber) {
+  const r = String(rollNumber || "").trim().toLowerCase();
+  if (!r) return null;
+  return getStore().students.find(
+    (s) => String(s.rollNumber).trim().toLowerCase() === r,
+  ) || null;
+}
+
 // Variable number of lab weeks per assignment
 export function getLabWeekCount(assignmentId) {
   const store = getStore();

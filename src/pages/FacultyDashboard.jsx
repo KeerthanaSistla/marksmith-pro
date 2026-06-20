@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Users, BookOpen, Brain, LogOut } from "lucide-react";
+import { Settings, Users, BookOpen, Brain, LogOut, Plus } from "lucide-react";
 import RiskAssessment from "@/components/faculty/RiskAssessment";
+import AddTeachingAssignment from "@/components/faculty/AddTeachingAssignment";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +18,8 @@ import {
 const FacultyDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [addOpen, setAddOpen] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   // Logged-in faculty (mock)
   const facultyId = DEFAULT_FACULTY_ID;
@@ -36,7 +39,8 @@ const FacultyDashboard = () => {
         batch,
       };
     });
-  }, [facultyId, store]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facultyId, store, refreshTick]);
 
   // Academic year filter
   const academicYears = useMemo(() => {
@@ -137,12 +141,23 @@ const FacultyDashboard = () => {
             {/* Subject Cards */}
             <Card className="shadow-lg mb-8">
               <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  <BookOpen className="w-6 h-6" /> My Subjects
-                </CardTitle>
-                <CardDescription className="text-base">
-                  {myAssignments.length} teaching assignments across batches & sections
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-3 text-2xl">
+                      <BookOpen className="w-6 h-6" /> My Subjects
+                    </CardTitle>
+                    <CardDescription className="text-base mt-1">
+                      {myAssignments.length} teaching assignments across batches & sections
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setAddOpen(true)}
+                    className="shrink-0 gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Subject
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {myAssignments.length === 0 ? (
@@ -201,8 +216,12 @@ const FacultyDashboard = () => {
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-muted-foreground">Section:</span>
-                                <span className="font-medium">{a.section?.name} ({a.batch?.name})</span>
+                                <span className="text-muted-foreground">{a.isElective ? "Type:" : "Section:"}</span>
+                                <span className="font-medium">
+                                  {a.isElective
+                                    ? "Elective"
+                                    : `${a.section?.name || "—"}${a.batch ? ` (${a.batch.name})` : ""}`}
+                                </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Credits:</span>
@@ -230,6 +249,12 @@ const FacultyDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+      <AddTeachingAssignment
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        facultyId={facultyId}
+        onAdded={() => setRefreshTick((t) => t + 1)}
+      />
     </div>
   );
 };
