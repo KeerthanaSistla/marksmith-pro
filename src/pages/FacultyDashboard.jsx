@@ -18,6 +18,8 @@ import {
 const FacultyDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [addOpen, setAddOpen] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   // Logged-in faculty (mock)
   const facultyId = DEFAULT_FACULTY_ID;
