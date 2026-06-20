@@ -249,6 +249,12 @@ const FacultyDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+      <AddTeachingAssignment
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        facultyId={facultyId}
+        onAdded={() => setRefreshTick((t) => t + 1)}
+      />
     </div>
   );
 };
