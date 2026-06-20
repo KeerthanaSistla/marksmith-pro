@@ -141,12 +141,23 @@ const FacultyDashboard = () => {
             {/* Subject Cards */}
             <Card className="shadow-lg mb-8">
               <CardHeader className="pb-6">
-                <CardTitle className="flex items-center gap-3 text-2xl">
-                  <BookOpen className="w-6 h-6" /> My Subjects
-                </CardTitle>
-                <CardDescription className="text-base">
-                  {myAssignments.length} teaching assignments across batches & sections
-                </CardDescription>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                  <div>
+                    <CardTitle className="flex items-center gap-3 text-2xl">
+                      <BookOpen className="w-6 h-6" /> My Subjects
+                    </CardTitle>
+                    <CardDescription className="text-base mt-1">
+                      {myAssignments.length} teaching assignments across batches & sections
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={() => setAddOpen(true)}
+                    className="shrink-0 gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Subject
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {myAssignments.length === 0 ? (
