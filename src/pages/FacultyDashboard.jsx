@@ -39,7 +39,8 @@ const FacultyDashboard = () => {
         batch,
       };
     });
-  }, [facultyId, store]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facultyId, store, refreshTick]);
 
   // Academic year filter
   const academicYears = useMemo(() => {
