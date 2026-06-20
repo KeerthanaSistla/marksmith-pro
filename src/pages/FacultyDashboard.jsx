@@ -216,8 +216,12 @@ const FacultyDashboard = () => {
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
                               <div className="flex justify-between">
-                                <span className="text-muted-foreground">Section:</span>
-                                <span className="font-medium">{a.section?.name} ({a.batch?.name})</span>
+                                <span className="text-muted-foreground">{a.isElective ? "Type:" : "Section:"}</span>
+                                <span className="font-medium">
+                                  {a.isElective
+                                    ? "Elective"
+                                    : `${a.section?.name || "—"}${a.batch ? ` (${a.batch.name})` : ""}`}
+                                </span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">Credits:</span>
